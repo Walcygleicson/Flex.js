@@ -38,8 +38,10 @@ const _SYM = (function () {
 // ---------------------------
 /** Pacote Interno de RegExp */
 const _REGX = (function () {
-    const regex = {}
-    return regex
+    const regex = {};
+    /** Testa se uma string começa com uma sequencia (sigla) de letras maiúsculas. */
+    regex.startAcronym = /^([A-Z]{2,})/;
+    return regex;
 })()
 
 // -------------------------
@@ -78,7 +80,33 @@ const _AUX = (function () {
 // [Flex.js]
 // [Módulos Públicos da Lib] ------>
 
+/** * *`[any]`*
+ * ---
+ * * Retorna uma *`String`* indicando o tipo de um dado ou objeto.
+ * ---
+ * @param {*} target > Um dado ou objeto.
+ * @returns {Type}
+ */
+flex.type = (target) => {
+    // Retornar de imediato "HTMLElement" caso seja uma instância de...
+    if (target instanceof HTMLElement) { return ELEMENT; }
+    // Obter tipo pelo prototype
+    target = Object.prototype.toString.call(target).slice(8, -1);
+    // Retornar de imediato se for um tipo que comece com siglas a maiúsulas, como HTMLCollection, HTMLDocument e etc.
+    if (_REGX.startAcronym.test(target)) { return target; }
+    return target.charAt(0).toLowerCase() + target.slice(1);
+}
+
 
 // ----- [Publicar Lib]
 const _ = Object.freeze(flex)
 export default _
+
+
+//   ●    ●    ●    ●    ●    ●    ●    ●    ●
+//--- [Conjunto de typedef]
+
+/**
+ * @typedef {"number"|"function"|"bigInt"|"symbol"|"undefined"|"array"|"object"|"string"|"HTMLElement"|"HTMLCollection"|"nodeList"|"set"|"map"|"null"|"boolean"|"date"|"window"|"HTMLDocument"|"error"|"animation"|"arrayBuffer"|"blob"|"namedNodeMap"|"DOMTokenList"|"pinterEvent"|"mouseEvent"|"event"|"DOMParser"|"styleSheetList"|"CSSStyleSheet"|"cssRuleList"|"text"|"comment"} Type
+ * 
+ */
