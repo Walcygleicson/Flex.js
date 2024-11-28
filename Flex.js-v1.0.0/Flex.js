@@ -55,6 +55,8 @@ const _CELL = (function () {
 /** Pacote Interno de Métodos Auxiliares */
 const _AUX = (function () {
     const aux = {}
+
+    aux.arrfy = ()=>{}
     
     /** Define propriedades congeladas diretamente no *`Object`* alvo de forma rasa ou profunda. */
     // aux.setFreezeProps = (target, obj = {}, deep = true) => {
@@ -80,6 +82,8 @@ const _AUX = (function () {
 // [Flex.js]
 // [Módulos Públicos da Lib] ------>
 
+// [ANY] ________________________________________________
+
 /** * *`[any]`*
  * ---
  * * Retorna uma *`String`* indicando o tipo de um dado ou objeto.
@@ -97,15 +101,30 @@ flex.type = (target) => {
     return target.charAt(0).toLowerCase() + target.slice(1);
 }
 
+/** * *`[any]`*
+ * ---
+ * * Testa se o tipo de um dado ou objeto corresponde a pelo menos um dos tipos especificados em *`(...types)`* e retorna um *`Boolean`*.
+ * ---
+ * @param {*} target > Um dado ou objeto a ser testado.
+ * @param {...Type} types > Uma *`String`* indicando um tipo esperado.
+ */
+flex.is = (target, ...types) => {
+    return types.length > 0? types.some(tp => flex.type(target) === tp) : undefined
+}
+
+
+// [COLLECTIONS] ____________________________________________
 
 // ----- [Publicar Lib]
-const _ = Object.freeze(flex)
+const _ = flex
 export default _
+
+// --- [Exportação dos Módulos Internos Para Área de Testes]
+export {_AUX}
 
 
 //   ●    ●    ●    ●    ●    ●    ●    ●    ●
 //--- [Conjunto de typedef]
-
 /**
  * @typedef {"number"|"function"|"bigInt"|"symbol"|"undefined"|"array"|"object"|"string"|"HTMLElement"|"HTMLCollection"|"nodeList"|"set"|"map"|"null"|"boolean"|"date"|"window"|"HTMLDocument"|"error"|"animation"|"arrayBuffer"|"blob"|"namedNodeMap"|"DOMTokenList"|"pinterEvent"|"mouseEvent"|"event"|"DOMParser"|"styleSheetList"|"CSSStyleSheet"|"cssRuleList"|"text"|"comment"} Type
  * 
