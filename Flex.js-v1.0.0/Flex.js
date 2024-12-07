@@ -1,8 +1,8 @@
 "use strict"
-const flex = {}
+const Flex = {}
 
 // ---- [Infos de Criação da Lib]
-flex.ABOUT = Object.freeze({
+Flex.ABOUT = Object.freeze({
     name: "Flex",
     version: "1.0.0",
     created: "2024-Brasil",
@@ -69,27 +69,42 @@ const AUX = (function () {
     const Aux = {}
    
     Aux.isNIL = (value) => value == null
-    Aux.isNAN = (value)=> typeof value === "number" && value !== value
-    Aux.arrfy = ()=>{}
+    Aux.isNAN = (value) => typeof value === "number" && value !== value
+    Aux.typeof = (o) => o === null ? "null" : typeof o
+    /** Usado para testar se um objeto é uma lista indexada. */
+    Aux.isIndexedList = (list) => {
+        return Array.isArray(list) || (
+            AUX.typeof(list) === "object" &&
+            "length" in list && // Testa a existência da propriedade length
+            list.length >= 0 && // Testa se length númerico e positivo
+            Object.keys(list).every((key) => !isNaN(parseInt(key))) // Testa se todas as chaves são número inteiros
+        );
+    }
+    /** Usado para obter lista de chaves de propriedades enumeráveis de coleções chaveadas*/
+    Aux.getKeys = (o, i) => {
+        if (o instanceof Map) {
+            return i === undefined? [... o.keys()]: o.keys()[i]
+        } else if (AUX.typeof(o) === "object" && !Aux.isIndexedList(o) && !(o instanceof Set)) {
+            return i === undefined? Object.keys(o) : Object.keys(o)[i]
+        }
+    }
     
     return Aux
 })();
 //#endregion
 
 
-// FLEX.JS   ●    ●    ●    ●    ●    ●    ●    ●    ●
-// [Módulos Públicos da Lib] ------>
+// FLEX.JS Módulos Públicos   ●    ●    ●    ●    ●    ●    ●    ●    ●
 
-
-// #region [ANY] -------------------------------
+// #region[ANY] -------------------------------
 
 /** *`[any]`*
- * * Retorna uma *`string`* indicando o tipo de um dado ou objeto.
+ * * Retorna uma *`string`* indicando o tipo preciso de um dado ou objeto.
  * ---
  * @param {*} target > Um dado ou objeto.
  * @returns {Type}
  */
-flex.type = (target) => {
+Flex.type = (target) => {
     // Retornar de imediato "HTMLElement" caso seja uma instância de...
     if (ISWINDOW && target instanceof HTMLElement) { return ELEMENT; }
     //Verificação de tipos NaN
@@ -101,15 +116,22 @@ flex.type = (target) => {
     return target.charAt(0).toLowerCase() + target.slice(1);
 }
 
-//// Implementar comparação por constructor
+/** *`[any]`*
+ * * É semelhante ao *`typeof`* operador, porém corrige o *`bug histórico`* em que *`typeof null => "object"`*.
+ * ---
+ * @param {*} target Uma valor ou objeto a ser analisado.
+ * @returns {typeof}
+ */
+Flex.typeof = (target)=>AUX.typeof(target)
+
 /** *`[any]`*
  * * Testa se o tipo de um dado ou objeto corresponde a um dos tipos passados em *`(...types)`* e retorna um *`boolean`*.
  * ---
  * @param {*} target > Um dado ou objeto a ser testado.
  * @param {...Type | ObjectConstructor} types > O tipo esperado.
  */
-flex.is = (target, ...types) => {
-    const tp = flex.type(target)
+Flex.is = (target, ...types) => {
+    const tp = Flex.type(target)
     if (types.length > 0) {
         // Para null, undefined e NaN
         // >> Testar se o tipo ou se o valor está em ..types. Já que não é possível testar por construtor.
@@ -133,26 +155,26 @@ flex.is = (target, ...types) => {
     }
 }
 
+
 /** *`[any]`*
- * * Testa se um valor é um *`primitivo`* e retorna um *`boolean`*. Se nenhum valor for passado, o retorno é *`undefined`*.
+ * * Testa se um valor é um *`primitivo`* e retorna um *`boolean`*.
  * ---
- * @param {unknown} value > Um valor a ser testado. 
+ * @param {any} value > Um valor a ser testado. 
  */
-flex.isPrimitive = function (value = UNKNOWN) {
-    return value !== UNKNOWN ? typeof e !== "object" && typeof e !== "function" : undefined
-}
+Flex.isPrimitive = (value) => AUX.typeof(value) !== "object" && typeof value !== "function"
+
 
 /** *`[any]`*
  * * Testa se um valor é um tipo *`NaN`* e retorna um *`boolean`*.
  * @param {*} value > Um valor a ser testado.
  */
-flex.isNaN = (value) => AUX.isNAN(value) 
+Flex.isNaN = (value) => AUX.isNAN(value) 
 
 /** *`[any]`*
  * * Testa se um valor é *`null`* ou *`undefined`* e retorna um *`boolean`*.
  * @param {*} value > Um valor a ser testado.
  */
-flex.isNil = (value)=> AUX.isNIL(value)
+Flex.isNil = (value)=> AUX.isNIL(value)
 
 /** * *`[any]`*
  * ---
@@ -161,30 +183,84 @@ flex.isNil = (value)=> AUX.isNIL(value)
  * @param {*} target > O objeto alvo.
  * @returns {ObjectConstructor}
  */
-flex.constructor = (target) => {return AUX.isNIL(target)? undefined : Object.getPrototypeOf(target).constructor}
+Flex.constructor = (target) => { return AUX.isNIL(target) ? undefined : Object.getPrototypeOf(target).constructor }
+
+/** *`[any]`*
+ * * Testa se um objeto é um tipo *`"array-like"`* - objeto semelhante a um *`array`* - e retorna um *`boolean`*.
+ * ---
+ * @param {object} target > Um objeto a ser analisado.
+ */
+Flex.isArrayLike = (target) => {
+    return !Array.isArray(target) && AUX.isIndexedList(target)
+}
 
 //#endregion -----------------------------------------------
 
 // #region [COLLECTION] ---------------------------
 //#endregion---------------------------------------
 
-// [STRING] ________________________________________________
-// [COLLECTIONS] ____________________________________________
-// [COLLECTIONS] ____________________________________________
-// [COLLECTIONS] ____________________________________________
+// #region [DICTIONARY]--------------------------
+
+/** *`[dictionary]`*
+ * * Testa se um objeto é um *`"dictionary"`* - qualquer coleção que armazena pares de chave e valor - e retorna um *`boolean`*.
+ * 
+ * @param {*} target > Uma objeto a ser testado.
+ */
+Flex.isDict = (target) => !AUX.isIndexedList(target) && AUX.typeof(target) == "object"
+
+/** *`[dictionary]`*
+ * * Retorna um *`array`* contendo as chaves de propriedades enumeráveis de um objeto ou uma chave obtida ao especificar o índice.
+ * ---
+ * @param {Dictionary} dict > Um *`dictionary`* objeto.
+ * @param {number} keyIndex > O índice da chave requerida.
+ * @returns {Array<string> | string}
+ */
+Flex.keys = (dict, keyIndex) => AUX.getKeys(dict, keyIndex)
+//#endregion---------------------------
+
+// #region [LIST] ---------------------------------
+/** *`[list]`*
+ * * Testa se um objeto é um *`"list"`* - coleção ordenada de valores indexados - e retorna um *`boolean`*.
+ * ---
+ * @param {*} target > Um objeto a ser testado.
+ */
+Flex.isList = (target) => AUX.isIndexedList(target)
+//#endregion----------------------------------
+
+// #region [STRING] ________________________________________________
+
+/** *`[string]`*
+ *  * Converte uma *`string`* no formato *json* válido para o valor ou objeto correspondente e o retorna. Se o argumento passado não for válido, retorna apenas *`undefined`*.
+ * * Uma função *`handler`* opcional pode ser fornecida para executar uma transformação no objeto resultante antes que ele seja retornado.
+ * ---
+ * @param {string} str > Uma *`string`* no formato *`json`*. 
+ * @param {(this:any, key: string, value: any)=>any} handler > Executa uma função que prescreve como cada valor originalmente produzido pela análise sintática é transformado antes de ser retornado. Valores não-chamáveis ​​são ignorados. A função é chamada com os mesmos argumentos da função *reviver* do método nativo *`JSON.parse()`*.
+ */
+Flex.JSONparse = (str, handler) => {
+    try {return JSON.parse(str, handler)} catch (e) {
+        return undefined
+    }
+}
+// #endregion
 
 
 // ----- [Publicar Lib]
-const _ = flex
+/** @namespace Flex*/
+const _ = Flex
 export default _
 
 // --- [Exportação dos Módulos Internos Para Área de Testes]
-export { AUX }
+export {AUX}
 
 
-//   ●    ●    ●    ●    ●    ●    ●    ●    ●
+// #region @typedef   ●    ●    ●    ●    ●    ●    ●    ●    ●
 //--- [Conjunto de typedef]
 /**
  * @typedef {"number"|"function"|"bigInt"|"symbol"|"undefined"|"array"|"object"|"string"|"HTMLElement"|"HTMLCollection"|"nodeList"|"set"|"map"|"null"|"boolean"|"date"|"window"|"HTMLDocument"|"error"|"animation"|"arrayBuffer"|"blob"|"namedNodeMap"|"DOMTokenList"|"pinterEvent"|"mouseEvent"|"event"|"DOMParser"|"styleSheetList"|"CSSStyleSheet"|"cssRuleList"|"text"|"comment"|"NaN"} Type
  * 
+ * @typedef {{}} Dictionary Uma coleção de pares de chave e valor.
+ * 
+ * @typedef {[] | ArrayLike} List Uma coleção de valores ordenados por índices.
+ * 
  */
+//#endregion

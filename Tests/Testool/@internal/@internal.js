@@ -496,31 +496,25 @@ internal.logTests = (identity = {}, resObj, testIndex) => {
 }
 
 
+class TestMap {
+    constructor() {
+        internal.setter({functions: {}, properties: {}}, this)
+    }
+    
+    /** Responsável por adicionar as declarações de funções/propriedades para teste aos seus respectivos lugares */
+    add(target,) { }
 
-internal.NewTestMap = (function () {
-
-    class TestMap{
-        constructor() {
-            internal.setter({functions: {}, properties: {}}, this)
-        }
-        
-        /** Responsável por adicionar as declarações de funções/propriedades para teste aos seus respectivos lugares */
-        add(target,) { }
-
-        /** Responsável por obter uma declaração de função/propriedades para teste */
-        get(target) { }
-        
-        get size() {
-            return {
-                func: Object.keys(this.functions).length,
-                prop: Object.keys(this.properties).length
-            }
+    /** Responsável por obter uma declaração de função/propriedades para teste */
+    get(target) { }
+    
+    get size() {
+        return {
+            func: Object.keys(this.functions).length,
+            prop: Object.keys(this.properties).length
         }
     }
-
-    return new TestMap()
-    
-})()
+}
+internal.NewTestMap = ()=>{return new TestMap()}
 
 
 //<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><

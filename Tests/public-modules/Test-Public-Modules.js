@@ -7,12 +7,15 @@ const Test = new Testool({
     title: "Teste dos módulos públicos da lib Flex.js",
     root: _
 })
-
-
-const div = document.createElement("div"),
-    ndList = div.childNodes,
+///// -------------------
+const div = document.createElement("div")
+div.setAttribute("class", "test-div")
+    
+const ndList = div.childNodes,
     HTMLCollct = div.children,
-    comment = document.createComment("comentário HTML")
+    comment = document.createComment("comentário HTML"),
+    domTokemList = div.classList,
+    argments = (function(){return arguments})()
 //--- [Declarações dos métodos]
 
 Test.set("type", (args) => {
@@ -68,5 +71,47 @@ Test.set("constructor", (args) => {
     args(ndList).expect(NodeList)
     
 })
+
+Test.set("isPrimitive", (args) => {
+    args().expect(true)
+    args(1).expect(true)
+    args(null).expect(true)
+    args(23243n).expect(true)
+    args(0x02).expect(true)
+    args([]).expect(false)
+    args(Symbol()).expect(true)
+    args(function () { }).expect(false)
+    args({}).expect(false)
+    args(div).expect(false)
+})
+
+Test.set("isArrayLike", (args) => {
+    //Criando um array-like
+    const fList = { 0: "test" }
+    Object.defineProperty(fList, "length", { value: 0 })
+
+    /////----------------
+    args(null).expect(false)
+    args([]).expect(false)
+    args({ length: 0 }).expect(false)
+    args(fList).expect(true)
+    args().expect(false)
+    args(div).expect(false)
+    args(ndList).expect(true)
+    args(HTMLCollct).expect(true)
+    args(domTokemList).expect(true)
+    args(window).expect(false)
+    args(argments).expect(true)
+    args(document.styleSheets).expect(true)
+    args(div.attributes).expect(true)
+})
+
+Test.set("typeof", (args) => {
+    args(null).expect("null")
+    args({}).expect("object")
+    args(function () { }).expect("function")
+    args([]).expect("object")
+})
+
 
 Test.logAll()

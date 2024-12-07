@@ -98,7 +98,7 @@ export default class Testool {
         });
 
         // Define uma lista privada de funções declaradas para teste.
-        Object.defineProperty(this, SYM.declared, { value: I.NewTestMap });
+        Object.defineProperty(this, SYM.declared, { value: I.NewTestMap() });
     }
 
     /**
@@ -139,7 +139,7 @@ export default class Testool {
         name = I.evaluateName(name, declared);
 
         /** Object de declaração montado */
-        var statement = {
+        let statement = {
             target: func,
             tests: [],
         };
