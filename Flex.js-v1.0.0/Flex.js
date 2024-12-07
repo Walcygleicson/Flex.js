@@ -7,8 +7,9 @@ Flex.ABOUT = Object.freeze({
     version: "1.0.0",
     created: "2024-Brasil",
     author: "Walcygleicson M. Oliveira",
-    github: null,
-    documents: null
+    documents: null,
+    github: "https://github.com/Walcygleicson/Flex.js",
+    licence: "MIT",
 })
 
 // #region DATAS internal ----------------------
@@ -183,7 +184,7 @@ Flex.isNil = (value)=> AUX.isNIL(value)
  * @param {*} target > O objeto alvo.
  * @returns {ObjectConstructor}
  */
-Flex.constructor = (target) => { return AUX.isNIL(target) ? undefined : Object.getPrototypeOf(target).constructor }
+Flex.constructorOf = (target) => { return AUX.isNIL(target) ? undefined : Object.getPrototypeOf(target).constructor }
 
 /** *`[any]`*
  * * Testa se um objeto é um tipo *`"array-like"`* - objeto semelhante a um *`array`* - e retorna um *`boolean`*.
@@ -242,6 +243,9 @@ Flex.JSONparse = (str, handler) => {
     }
 }
 // #endregion
+
+// #regin [ERROR]-------------------------------------
+//#endregion ----------------------------------------
 
 
 // ----- [Publicar Lib]

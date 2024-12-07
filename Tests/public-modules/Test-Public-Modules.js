@@ -17,7 +17,21 @@ const ndList = div.childNodes,
     domTokemList = div.classList,
     argments = (function(){return arguments})()
 //--- [Declarações dos métodos]
+const fakeArr = { 0: "foo" }
+Object.defineProperty(fakeArr, "length", { value: 1 })
+const sym = Symbol("test")
+const o = { name: "foo", age: 23 };
+Object.defineProperty(o, "id", { value: 1 });
+const set = new Set(["foo", "foo", 1, true, Symbol])
+const map = new Map([
+    ["foo", "bar"],
+    ["say", "hello"],
+    [1, true],
+    [sym, true],
+])
+const prox = new Proxy({}, {})
 
+//////////////////////////////////////////////
 Test.set("type", (args) => {
     args(NaN).expect("NaN")
     args(1).expect("number")
@@ -57,7 +71,7 @@ Test.set("is", (args) => {
     args(1, String).expect(false)
 })
 
-Test.set("constructor", (args) => {
+Test.set("constructorOf", (args) => {
     args(0).expect(Number)
     args(null).expect()
     args(NaN).expect(Number)
@@ -86,15 +100,12 @@ Test.set("isPrimitive", (args) => {
 })
 
 Test.set("isArrayLike", (args) => {
-    //Criando um array-like
-    const fList = { 0: "test" }
-    Object.defineProperty(fList, "length", { value: 0 })
 
     /////----------------
     args(null).expect(false)
     args([]).expect(false)
     args({ length: 0 }).expect(false)
-    args(fList).expect(true)
+    args(fakeArr).expect(true)
     args().expect(false)
     args(div).expect(false)
     args(ndList).expect(true)
@@ -113,5 +124,50 @@ Test.set("typeof", (args) => {
     args([]).expect("object")
 })
 
+Test.set("isNaN", (args) => {
+    args(1).expect(false)
+    args(0).expect(false)
+    args(0.1).expect(false)
+    args("foo").expect(false)
+    args("1").expect(false)
+    args(NaN).expect(true)
+    args(null).expect(false)
+    args(undefined + null).expect(true)
+    args(2 - "abc").expect(true)
+})
 
-Test.logAll()
+Test.set("isNil", (args) => {
+    args(null).expect(true)
+    args(undefined).expect(true)
+    args(0).expect(false)
+    args(0.0).expect(false)
+    args(false).expect(false)
+    args(NaN).expect(false)
+    args("").expect(false)
+    args(void true).expect(true)
+})
+
+Test.set("isDict", (args) => {
+    args(null).expect(false)
+    args({}).expect(true)
+    args([]).expect(false)
+    args(function () { }).expect(false)
+    args("foo").expect(false)
+    args(argments).expect(false)
+    args(fakeArr).expect(false) // FakeArr é considerado um List, por mais que Flex.type => "object", sua estrutura é de um array-like
+    args(prox).expect(true)
+    args(Test).expect(true)
+})
+
+Test.set("keys", (args) => {
+    args(o).expect(["name", "age"])
+    args(set).expect(undefined)
+    args(map).expect(["foo", "say", 1, sym])
+    args(fakeArr).expect(undefined)
+    args(prox).expect([])
+    args(null).expect(undefined)
+    args(o, 1).expect("age")
+    args(o, 10).expect(undefined)
+})
+
+Test.logLast(true)
