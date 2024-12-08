@@ -161,6 +161,8 @@ Test.set("isDict", (args) => {
     args(prox).expect(true)
     args(Test).expect(true)
     args(set).expect(false)
+    args(div).expect(false)
+    args(HTMLCollct).expect(false)
 })
 
 Test.set("keys", (args) => {
@@ -172,6 +174,7 @@ Test.set("keys", (args) => {
     args(null).expect(undefined)
     args(o, 1).expect("age")
     args(o, 10).expect(undefined)
+    args(div).expect(undefined)
 })
 
 Test.set("isList", (args) => {
@@ -185,6 +188,7 @@ Test.set("isList", (args) => {
     args(ndList).expect(true)
     args(domTokemList).expect(true)
     args(div.attributes).expect(true)
+    args(set).expect(true)
 })
 
 Test.set("JSONParse", (args) => {

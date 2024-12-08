@@ -85,14 +85,17 @@ const AUX = (function () {
     Aux.getKeys = (o, i) => {
         if (o instanceof Map) {
             return i === undefined? [... o.keys()]: o.keys()[i]
-        } else if (AUX.typeof(o) === "object" && !Aux.isList(o)) {
+        } else if (AUX.typeof(o) === "object" && !Aux.isList(o) && Flex.type(o) !== "HTMLElement") {
             return i === undefined? Object.keys(o) : Object.keys(o)[i]
         }
     }
 
+    /** Obtém valores das propriedades de um objeto ou valores de um objeto Set */
     Aux.getValues = (o, i) => {
-        if (o instanceof Map) {
+        if (o instanceof Map || o instanceof Set) {
             return i === undefined ? [...o.values()] : o.values()[i]
+        } else if (Flex.isDict(o)) {
+          return i === undefined? Object.values(o) : Object.values(o)[i]
         }
     }
     /** Usado para criar um *`dictionary`* objeto sem *`prototype`*. @returns {{}} */
@@ -212,9 +215,9 @@ Flex.isArrayLike = (target) => {
 /** *`[dictionary]`*
  * * Testa se um objeto é um *`"dictionary"`* - qualquer coleção que armazena pares de chave e valor - e retorna um *`boolean`*.
  * 
- * @param {*} target > Uma objeto a ser testado.
+ * @param {object} target > Uma objeto a ser testado.
  */
-Flex.isDict = (target) => !AUX.isList(target) && AUX.typeof(target) == "object"
+Flex.isDict = (target) => !AUX.isList(target) && AUX.typeof(target) == "object" && Flex.type(target) !== "HTMLElement"
 
 /** *`[dictionary]`*
  * * Cria um *`object`* vazio sem um *`prototype`*.

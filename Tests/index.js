@@ -4,11 +4,11 @@ const body = document.body
 const btn = document.getElementById("btn")
 const proxy = new Proxy({bu: "buu"}, {})
 const sym = Symbol("sym-2")
-const arr = []
+const arr = [1,2,3]
 const obj = { name: "walcy", age: 27 }
 const set = new Set([1, 3,1, "a"])
 const map = new Map([["color", "red"], ["form", "exagon"]])
 const list = {}
 Object.defineProperty(list, "length", { value: 0 })
 
-console.log(_.isDict(set))
+console.log(_.isDict(btn))
