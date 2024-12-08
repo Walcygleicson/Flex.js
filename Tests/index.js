@@ -10,5 +10,4 @@ const set = new Set([1, 3,1, "a"])
 const map = new Map([["color", "red"], ["form", "exagon"]])
 const list = {}
 Object.defineProperty(list, "length", { value: 0 })
-
-console.log(_.isDict(btn))
+console.log(_.ABOUT)

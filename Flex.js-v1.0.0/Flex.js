@@ -2,15 +2,15 @@
 const Flex = {}
 
 // ---- [Infos de Criação da Lib]
-Flex.ABOUT = Object.freeze({
-    name: "Flex",
-    version: "1.0.0",
-    created: "2024-Brasil",
-    author: "Walcygleicson M. Oliveira",
-    documents: null,
-    github: "https://github.com/Walcygleicson/Flex.js",
-    licence: "MIT",
-})
+
+Flex.ABOUT = Object.create(null)
+Flex.ABOUT.name = "Flex"
+Flex.ABOUT.version = "1.0.0"
+Flex.ABOUT.created = "2024-Brasil"
+Flex.ABOUT.author = "Walcygleicson M. Oliveira"
+Flex.ABOUT.documents = null
+Flex.ABOUT.github = "https://github.com/Walcygleicson/Flex.js"
+Flex.ABOUT.licence = "MIT"
 
 // #region DATAS internal ----------------------
 // ----- [Conjunto de tipos de dados e objetos]
@@ -22,7 +22,7 @@ const NUMBER = "number",
     SYMBOL = "symbol",
     REGEXP = "regExp",
     ELEMENT = "HTMLElement",
-    HTMLCOLLECT = "HTMLCollection",
+    HTMLCOLLECTION = "HTMLCollection",
     NODELIST = "nodeList",
     SET = "set",
     MAP = "map",
@@ -84,8 +84,8 @@ const AUX = (function () {
     /** Usado para obter lista de chaves de propriedades enumeráveis de coleções chaveadas*/
     Aux.getKeys = (o, i) => {
         if (o instanceof Map) {
-            return i === undefined? [... o.keys()]: o.keys()[i]
-        } else if (AUX.typeof(o) === "object" && !Aux.isList(o) && Flex.type(o) !== "HTMLElement") {
+            return i === undefined ? [...o.keys()] : o.keys()[i]
+        } else if (Flex.isDict(o)) {
             return i === undefined? Object.keys(o) : Object.keys(o)[i]
         }
     }
@@ -107,7 +107,7 @@ const AUX = (function () {
 
 // FLEX.JS Módulos Públicos   ●    ●    ●    ●    ●    ●    ●    ●    ●
 
-// #region[ANY] -------------------------------
+// #region [ANY] -------------------------------
 
 /** *`[any]`*
  * * Retorna uma *`string`* indicando o tipo preciso de um dado ou objeto.
@@ -201,16 +201,11 @@ Flex.constructorOf = (target) => { return AUX.isNIL(target) ? undefined : Object
  * ---
  * @param {object} target > Um objeto a ser analisado.
  */
-Flex.isArrayLike = (target) => {
-    return !Array.isArray(target) && AUX.isList(target)
-}
+Flex.isArrayLike = (target) => !Array.isArray(target) && AUX.isList(target)
 
-//#endregion -----------------------------------------------
+//#endregion ---------------------------------
 
-// #region [COLLECTION] ---------------------------
-//#endregion---------------------------------------
-
-// #region [DICTIONARY]--------------------------
+// #region [DICTIONARY]------------------------
 
 /** *`[dictionary]`*
  * * Testa se um objeto é um *`"dictionary"`* - qualquer coleção que armazena pares de chave e valor - e retorna um *`boolean`*.
@@ -236,16 +231,16 @@ Flex.nullDict = () => AUX.nullDict()
 Flex.keys = (dict, keyIndex) => AUX.getKeys(dict, keyIndex)
 //#endregion---------------------------
 
-// #region [LIST] ---------------------------------
+// #region [LIST] ---------------------
 /** *`[list]`*
  * * Testa se um objeto é um *`"list"`* - coleção ordenada de valores indexados - e retorna um *`boolean`*.
  * ---
- * @param {*} target > Um objeto a ser testado.
+ * @param {object} target > Um objeto a ser testado.
  */
 Flex.isList = (target) => AUX.isList(target)
 //#endregion----------------------------------
 
-// #region [STRING] ________________________________________________
+// #region [STRING]--------------------------
 
 /** *`[string]`*
  *  * Converte uma *`string`* no formato *json* válido para o valor ou objeto correspondente e o retorna. Se o argumento passado não for válido, retorna apenas *`undefined`*.
@@ -259,10 +254,10 @@ Flex.JSONParse = (str, handler) => {
         return undefined
     }
 }
-// #endregion
+// #endregion -----------------------------
 
 
-// #region [OBJECT]-----------------------------------------
+// #region [OBJECT]------------------------
 
 /** *`[object]`*
  * * Remove diretamente o *`prototype`* de um objeto.
@@ -274,11 +269,11 @@ Flex.unproto = (obj) => {
         Object.setPrototypeOf(obj, null)
     }
 }
-//#endregion -----------------------------------------------
+//#endregion --------------------------
 
 
-// #regin [ERROR]-------------------------------------
-//#endregion ----------------------------------------
+// #regin [ERROR]-----------------------
+//#endregion ---------------------------
 
 
 
