@@ -10,4 +10,5 @@ const set = new Set([1, 3,1, "a"])
 const map = new Map([["color", "red"], ["form", "exagon"]])
 const list = {}
 Object.defineProperty(list, "length", { value: 0 })
-console.log(_.ABOUT)
+const c = Object.create(null, {hi: {value: "hi"}})
+console.log(_)

@@ -58,6 +58,10 @@ AUXTest.set("getValues", (args) => {
     args(body).expect(undefined)
     args(nodeList).expect(undefined)
     args(htmlCollection).expect(undefined)
+    args(obj, 1).expect(27)
+    args(obj, 5).expect(undefined)
+    args(obj, "0").expect("foo")
+    args(obj, "hello").expect(undefined)
 
 })
 

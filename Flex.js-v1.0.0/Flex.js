@@ -1,8 +1,6 @@
 "use strict"
 const Flex = {}
-
 // ---- [Infos de Criação da Lib]
-
 Flex.ABOUT = Object.create(null)
 Flex.ABOUT.name = "Flex"
 Flex.ABOUT.version = "1.0.0"
@@ -11,6 +9,7 @@ Flex.ABOUT.author = "Walcygleicson M. Oliveira"
 Flex.ABOUT.documents = null
 Flex.ABOUT.github = "https://github.com/Walcygleicson/Flex.js"
 Flex.ABOUT.licence = "MIT"
+Object.freeze(Flex.ABOUT)
 
 // #region DATAS internal ----------------------
 // ----- [Conjunto de tipos de dados e objetos]
@@ -107,7 +106,7 @@ const AUX = (function () {
 
 // FLEX.JS Módulos Públicos   ●    ●    ●    ●    ●    ●    ●    ●    ●
 
-// #region [ANY] -------------------------------
+// #region [ANY] ----------------------
 
 /** *`[any]`*
  * * Retorna uma *`string`* indicando o tipo preciso de um dado ou objeto.
@@ -205,7 +204,7 @@ Flex.isArrayLike = (target) => !Array.isArray(target) && AUX.isList(target)
 
 //#endregion ---------------------------------
 
-// #region [DICTIONARY]------------------------
+// #region [DICTIONARY]----------------
 
 /** *`[dictionary]`*
  * * Testa se um objeto é um *`"dictionary"`* - qualquer coleção que armazena pares de chave e valor - e retorna um *`boolean`*.
@@ -229,6 +228,15 @@ Flex.nullDict = () => AUX.nullDict()
  * @returns {Array<string> | string}
  */
 Flex.keys = (dict, keyIndex) => AUX.getKeys(dict, keyIndex)
+
+/** *`[dictionary]`*
+ * * Retorna um *`array`* contendo os valores das propriedades enumeráveis de um objeto ou um único valor obtido ao especificar o índice. Da mesma forma também obtém os valores de um objeto *`Set`*, embora não seja um considerado *`"dictionary"`*.
+ * ---
+ * @param {Dictionary} dict > Um *`dictionary`* objeto.
+ * @param {number} keyIndex > O índice da chave requerida.
+ * @returns {Array<unknown> | unknown}
+ */
+Flex.values = (dict, keyIndex) => AUX.getValues(dict, keyIndex)
 //#endregion---------------------------
 
 // #region [LIST] ---------------------
@@ -240,7 +248,7 @@ Flex.keys = (dict, keyIndex) => AUX.getKeys(dict, keyIndex)
 Flex.isList = (target) => AUX.isList(target)
 //#endregion----------------------------------
 
-// #region [STRING]--------------------------
+// #region [STRING]--------------------
 
 /** *`[string]`*
  *  * Converte uma *`string`* no formato *json* válido para o valor ou objeto correspondente e o retorna. Se o argumento passado não for válido, retorna apenas *`undefined`*.
@@ -256,8 +264,7 @@ Flex.JSONParse = (str, handler) => {
 }
 // #endregion -----------------------------
 
-
-// #region [OBJECT]------------------------
+// #region [OBJECT]--------------------
 
 /** *`[object]`*
  * * Remove diretamente o *`prototype`* de um objeto.
@@ -265,9 +272,7 @@ Flex.JSONParse = (str, handler) => {
  * @param {object} obj > Um objeto alvo.
  */
 Flex.unproto = (obj) => {
-    if(!AUX.isNIL(obj)){
-        Object.setPrototypeOf(obj, null)
-    }
+    !AUX.isNIL(obj) ? Object.setPrototypeOf(obj, null) : null 
 }
 //#endregion --------------------------
 
