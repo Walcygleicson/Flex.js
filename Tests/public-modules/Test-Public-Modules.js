@@ -15,7 +15,8 @@ const ndList = div.childNodes,
     HTMLCollct = div.children,
     comment = document.createComment("comentário HTML"),
     domTokemList = div.classList,
-    argments = (function(){return arguments})()
+    argments = (function () { return arguments })(),
+    attrs = div.attributes
 //--- [Declarações dos métodos]
 const fakeArr = { 0: "foo" }
 Object.defineProperty(fakeArr, "length", { value: 1 })
@@ -30,6 +31,7 @@ const map = new Map([
     [sym, true],
 ])
 const prox = new Proxy({}, {})
+const nullObj = Object.create(null)
 
 //////////////////////////////////////////////
 Test.set("type", (args) => {
@@ -115,6 +117,7 @@ Test.set("isArrayLike", (args) => {
     args(argments).expect(true)
     args(document.styleSheets).expect(true)
     args(div.attributes).expect(true)
+    args(set).expect(true)
 })
 
 Test.set("typeof", (args) => {
@@ -157,6 +160,7 @@ Test.set("isDict", (args) => {
     args(fakeArr).expect(false) // FakeArr é considerado um List, por mais que Flex.type => "object", sua estrutura é de um array-like
     args(prox).expect(true)
     args(Test).expect(true)
+    args(set).expect(false)
 })
 
 Test.set("keys", (args) => {
@@ -170,4 +174,55 @@ Test.set("keys", (args) => {
     args(o, 10).expect(undefined)
 })
 
-Test.logLast(true)
+Test.set("isList", (args) => {
+    args(null).expect(false)
+    args([]).expect(true)
+    args(function () { }).expect(false)
+    args(fakeArr).expect(true)
+    args(o).expect(false)
+    args(argments).expect(true)
+    args(div).expect(false)
+    args(ndList).expect(true)
+    args(domTokemList).expect(true)
+    args(div.attributes).expect(true)
+})
+
+Test.set("JSONParse", (args) => {
+    args('{"foo": "bar"}').expect({ foo: "bar" })
+    args('[1, "hello"]').expect([1, "hello"])
+    args("hello").expect(undefined)
+    args(undefined).expect(undefined)
+    args("1").expect(1)
+    args('"1"').expect("1")
+})
+
+Test.set("nullDict", (args) => {
+    args().expect(nullObj)
+    args().exam(({ output }) => {
+        // Testar se foi criado sem prototype
+        if (Object.getPrototypeOf(output) === null) {
+            return true
+        }
+    })
+})
+
+Test.set("unproto", (args) => {
+    const obj = {}
+    const arr = []
+
+    args(null).expect(undefined)
+    args(undefined).expect(undefined)
+    args(obj).exam(() => {
+        if (Object.getPrototypeOf(obj) === null) {
+            return true
+        }
+    })
+    args(arr).exam(() => {
+        if (Object.getPrototypeOf(arr) === null) {
+            return true;
+        }
+    });
+})
+
+///////////////////////////
+Test.logAll()

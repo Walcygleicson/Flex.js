@@ -68,13 +68,13 @@ const _CELL = (function () {
 const AUX = (function () {
     // Os métodos deste objeto só tem permissão para depender dos prórpios métodos.
     const Aux = {}
-   
+
     Aux.isNIL = (value) => value == null
     Aux.isNAN = (value) => typeof value === "number" && value !== value
     Aux.typeof = (o) => o === null ? "null" : typeof o
     /** Usado para testar se um objeto é uma lista indexada. */
-    Aux.isIndexedList = (list) => {
-        return Array.isArray(list) || (
+    Aux.isList = (list) => {
+        return Array.isArray(list) || list instanceof Set || (
             AUX.typeof(list) === "object" &&
             "length" in list && // Testa a existência da propriedade length
             list.length >= 0 && // Testa se length númerico e positivo
@@ -85,15 +85,22 @@ const AUX = (function () {
     Aux.getKeys = (o, i) => {
         if (o instanceof Map) {
             return i === undefined? [... o.keys()]: o.keys()[i]
-        } else if (AUX.typeof(o) === "object" && !Aux.isIndexedList(o) && !(o instanceof Set)) {
+        } else if (AUX.typeof(o) === "object" && !Aux.isList(o)) {
             return i === undefined? Object.keys(o) : Object.keys(o)[i]
         }
     }
+
+    Aux.getValues = (o, i) => {
+        if (o instanceof Map) {
+            return i === undefined ? [...o.values()] : o.values()[i]
+        }
+    }
+    /** Usado para criar um *`dictionary`* objeto sem *`prototype`*. @returns {{}} */
+    Aux.nullDict = () => Object.create(null)
     
     return Aux
 })();
 //#endregion
-
 
 // FLEX.JS Módulos Públicos   ●    ●    ●    ●    ●    ●    ●    ●    ●
 
@@ -192,7 +199,7 @@ Flex.constructorOf = (target) => { return AUX.isNIL(target) ? undefined : Object
  * @param {object} target > Um objeto a ser analisado.
  */
 Flex.isArrayLike = (target) => {
-    return !Array.isArray(target) && AUX.isIndexedList(target)
+    return !Array.isArray(target) && AUX.isList(target)
 }
 
 //#endregion -----------------------------------------------
@@ -207,7 +214,14 @@ Flex.isArrayLike = (target) => {
  * 
  * @param {*} target > Uma objeto a ser testado.
  */
-Flex.isDict = (target) => !AUX.isIndexedList(target) && AUX.typeof(target) == "object"
+Flex.isDict = (target) => !AUX.isList(target) && AUX.typeof(target) == "object"
+
+/** *`[dictionary]`*
+ * * Cria um *`object`* vazio sem um *`prototype`*.
+ * ---
+ * @returns {{}}
+ */
+Flex.nullDict = () => AUX.nullDict()
 
 /** *`[dictionary]`*
  * * Retorna um *`array`* contendo as chaves de propriedades enumeráveis de um objeto ou uma chave obtida ao especificar o índice.
@@ -225,7 +239,7 @@ Flex.keys = (dict, keyIndex) => AUX.getKeys(dict, keyIndex)
  * ---
  * @param {*} target > Um objeto a ser testado.
  */
-Flex.isList = (target) => AUX.isIndexedList(target)
+Flex.isList = (target) => AUX.isList(target)
 //#endregion----------------------------------
 
 // #region [STRING] ________________________________________________
@@ -237,15 +251,32 @@ Flex.isList = (target) => AUX.isIndexedList(target)
  * @param {string} str > Uma *`string`* no formato *`json`*. 
  * @param {(this:any, key: string, value: any)=>any} handler > Executa uma função que prescreve como cada valor originalmente produzido pela análise sintática é transformado antes de ser retornado. Valores não-chamáveis ​​são ignorados. A função é chamada com os mesmos argumentos da função *reviver* do método nativo *`JSON.parse()`*.
  */
-Flex.JSONparse = (str, handler) => {
+Flex.JSONParse = (str, handler) => {
     try {return JSON.parse(str, handler)} catch (e) {
         return undefined
     }
 }
 // #endregion
 
+
+// #region [OBJECT]-----------------------------------------
+
+/** *`[object]`*
+ * * Remove diretamente o *`prototype`* de um objeto.
+ * ---
+ * @param {object} obj > Um objeto alvo.
+ */
+Flex.unproto = (obj) => {
+    if(!AUX.isNIL(obj)){
+        Object.setPrototypeOf(obj, null)
+    }
+}
+//#endregion -----------------------------------------------
+
+
 // #regin [ERROR]-------------------------------------
 //#endregion ----------------------------------------
+
 
 
 // ----- [Publicar Lib]

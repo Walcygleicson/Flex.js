@@ -11,24 +11,4 @@ const map = new Map([["color", "red"], ["form", "exagon"]])
 const list = {}
 Object.defineProperty(list, "length", { value: 0 })
 
-
-
-const registro = new FinalizationRegistry(() => {
-    console.log("Objeto removido");
-});
-
-class Conexao {
-    constructor() {
-        this.conexao = 111;
-        registro.register(this);
-        
-    }
-
-    destructor() {
-        registro.unregister(this)
-    }
-}
-
-var con = new Conexao()
-con.destructor()
-
+console.log(_.isDict(set))
