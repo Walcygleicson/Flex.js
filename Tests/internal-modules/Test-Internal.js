@@ -62,8 +62,7 @@ AUXTest.set("getValues", (args) => {
     args(obj, 5).expect(undefined)
     args(obj, "0").expect("foo")
     args(obj, "hello").expect(undefined)
-
 })
 
 ////////////////////////
-AUXTest.logAll()
+//AUXTest.logAll()

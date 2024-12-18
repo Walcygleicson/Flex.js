@@ -28,8 +28,21 @@ const NUMBER = "number",
     NAN = "NaN",
     /** Testa a existência do global *`window`* e retorna *`true`* caso exista, indicando que o ambiente atual é um navegador. */
     ISWINDOW = typeof window === "object" && window instanceof Window,
-    /** Serve para indicar a ausência de passagem de valores, substituindo o valor padrão *`undefined`* onde o mesmo é esperado.*/
-    UNKNOWN = Symbol("[unknown.value]")
+    LIST =
+        [
+            ARRAY,
+            NODELIST,
+            HTMLCOLLECTION,
+            SET,
+            "arguments",
+            "DOMTokenList",
+            "namedNodeMap",
+            "weakSet",
+            "dataView",
+            "blob",
+            "fileList",
+            "formData"
+        ]
     //#endregion
 
 // #region SYM internal  ---------------------------
@@ -71,9 +84,11 @@ const AUX = (function () {
     Aux.isNIL = (value) => value == null
     Aux.isNAN = (value) => typeof value === "number" && value !== value
     Aux.typeof = (o) => o === null ? "null" : typeof o
+    /** Usado para criar um *`dictionary`* objeto sem *`prototype`*. @returns {{}} */
+    Aux.nullDict = () => Object.create(null)
     /** Usado para testar se um objeto é uma lista indexada. */
     Aux.isList = (list) => {
-        return Array.isArray(list) || list instanceof Set || (
+        return Flex.is(list, ARRAY, SET, NODELIST, HTMLCOLLECTION, "arguments") || Array.isArray(list) || list instanceof Set || (
             AUX.typeof(list) === "object" &&
             "length" in list && // Testa a existência da propriedade length
             list.length >= 0 && // Testa se length númerico e positivo
@@ -88,7 +103,6 @@ const AUX = (function () {
             return i === undefined? Object.keys(o) : Object.keys(o)[i]
         }
     }
-
     /** Obtém valores das propriedades de um objeto ou valores de um objeto Set */
     Aux.getValues = (o, i) => {
         if (o instanceof Map || o instanceof Set) {
@@ -97,8 +111,43 @@ const AUX = (function () {
           return i === undefined? Object.values(o) : Object.values(o)[i]
         }
     }
-    /** Usado para criar um *`dictionary`* objeto sem *`prototype`*. @returns {{}} */
-    Aux.nullDict = () => Object.create(null)
+
+    /** @returns {PropertyDescriptor} */
+    Aux.propDescriptor = (o, prop) => {
+        if (AUX.typeof(o) === OBJECT) {
+            return Object.getOwnPropertyDescriptor(o, prop) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(o), prop)
+        }
+    }
+
+    /** Usado para obter uma das propriedades se existente em um objeto */
+    Aux.someProp = (o, ...keys) => {
+        if (AUX.typeof(o) === OBJECT) {
+            let is = {
+                MAPWEAK: Flex.is(o, "map", "weakMap"),
+                WEAKREF: Flex.type(o) === "weakRef"
+            }
+            
+            let prop
+            for (let i = 0; i < keys.length; i++){
+
+                if (is.MAPWEAK) {
+                    prop = o.get(keys[i])
+                } else if (is.WEAKREF) {
+                    prop = o.deref()[keys[i]]
+                } else {
+                    prop = o[keys[i]]
+                }
+
+                if (prop !== undefined) {
+                    is = null
+                    return prop
+                }
+            } 
+        }
+    }
+
+    Aux.isSETorMAP = (o) => o instanceof Set || o instanceof Map
+    
     
     return Aux
 })();
@@ -141,7 +190,7 @@ Flex.typeof = (target)=>AUX.typeof(target)
  * @param {...Type | ObjectConstructor} types > O tipo esperado.
  */
 Flex.is = (target, ...types) => {
-    const tp = Flex.type(target)
+    let tp = Flex.type(target)
     if (types.length > 0) {
         // Para null, undefined e NaN
         // >> Testar se o tipo ou se o valor está em ..types. Já que não é possível testar por construtor.
@@ -202,6 +251,24 @@ Flex.constructorOf = (target) => { return AUX.isNIL(target) ? undefined : Object
  */
 Flex.isArrayLike = (target) => !Array.isArray(target) && AUX.isList(target)
 
+/** *`[any]`*
+ * * Testa se objeto é um *`TypedArray`*, coleção de dados numéricos de tipo e tamanho fixo, como, por exemplo: *UInt8Array, Int32Array, Float32Array* e etc...
+ * @param {*} target 
+ * @returns {boolean}
+ */
+Flex.isTypedArray = (target) => {
+    return (target instanceof Int8Array ||
+        target instanceof Uint8Array ||
+        target instanceof Uint8ClampedArray ||
+        target instanceof Int16Array ||
+        target instanceof Uint16Array ||
+        target instanceof Int32Array ||
+        target instanceof Uint32Array ||
+        target instanceof Float32Array ||
+        target instanceof Float64Array)
+
+}
+
 //#endregion ---------------------------------
 
 // #region [DICTIONARY]----------------
@@ -237,6 +304,7 @@ Flex.keys = (dict, keyIndex) => AUX.getKeys(dict, keyIndex)
  * @returns {Array<unknown> | unknown}
  */
 Flex.values = (dict, keyIndex) => AUX.getValues(dict, keyIndex)
+
 //#endregion---------------------------
 
 // #region [LIST] ---------------------
@@ -274,7 +342,31 @@ Flex.JSONParse = (str, handler) => {
 Flex.unproto = (obj) => {
     !AUX.isNIL(obj) ? Object.setPrototypeOf(obj, null) : null 
 }
+
+/** *`[object]`*
+ * * Verifica se uma ou mais propriedades existem em um objeto e retorna o primeiro valor encontrado da busca. Se nenhuma propriedade for encontrada o retorno é *`undefined`*.
+ * ---
+ * @param {object} obj > Um objeto de propriedades. 
+ * @param  {...any} keys > Uma ou mais chaves de propriedades para a busca.
+ */
+Flex.getProp = (obj, ...keys) => AUX.someProp(obj, ...keys)
 //#endregion --------------------------
+
+// #region [COLLECTION] ---------------
+Flex.len = (collection) => {
+    // Objetos genéricos - obtér qunatidade de chaves
+    if (Flex.type(collection) === OBJECT) {
+        return Object.keys(collection).length  
+    } else if (AUX.typeof(collection) === OBJECT || typeof collection === STRING) {
+        // forçar retorno undefined para weaks object, pois sempre retornam 0
+        if(Flex.is(collection, WeakMap, WeakSet, WeakRef)){return undefined}
+        // Obter propriedades que indicam o comprimento de um objeto, se nenhum for encontrado, tentar obter comprimento das chaves como última opção
+        return AUX.someProp(collection, "length", "size", "byteLenght") ?? Object.keys(collection).length
+    }
+}
+
+//#endregion --------------------------
+
 
 
 // #regin [ERROR]-----------------------

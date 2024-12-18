@@ -1,6 +1,19 @@
 import Testool from "../Testool/Testool.js"
 import _ from "../../Flex.js-v1.0.0/Flex.js"
+const Class = (function () {
+    class Class {
+        constructor() {
+            this.value = 1
+            this.foo = "foo"
+            this.length = 2
+        }
 
+        get num() { return 80 }
+        mtd(){}
+    }
+
+    return new Class()
+})()
 // Iniciar teste para Flex.js - Módulos principais
 const Test = new Testool({
     name: "Flex",
@@ -15,7 +28,7 @@ const ndList = div.childNodes,
     HTMLCollct = div.children,
     comment = document.createComment("comentário HTML"),
     domTokemList = div.classList,
-    argments = (function () { return arguments })(),
+    argments = (function () { return arguments })(1,2),
     attrs = div.attributes
 //--- [Declarações dos métodos]
 const fakeArr = { 0: "foo" }
@@ -32,6 +45,14 @@ const map = new Map([
 ])
 const prox = new Proxy({}, {})
 const nullObj = Object.create(null)
+const arr = ["foo", "bar", 1.5, true]
+const wkMap = new WeakMap([[o, 2]])
+const wkRef = new WeakRef({ foo: "foo", num: 2.4 })
+const wkSet = new WeakSet([o, map])
+
+const buffer = new ArrayBuffer(1, 2.5, 7, 8)
+const view = new DataView(buffer)
+const uint8 = new Uint8Array(buffer)
 
 //////////////////////////////////////////////
 Test.set("type", (args) => {
@@ -228,5 +249,44 @@ Test.set("unproto", (args) => {
     });
 })
 
+
+Test.set("len", (args) => {
+    args("hello").expect(5)
+    args(o).expect(2)
+    args(arr).expect(4)
+    args(fakeArr).expect(1)
+    args(ndList).expect(0)
+    args(HTMLCollct).expect(0)
+    args(argments).expect(2)
+    args(set).expect(4)
+    args(map).expect(4)
+    args(attrs).expect(1)
+    args(undefined).expect(undefined)
+    args(12.5).expect(undefined)
+    args(wkMap).expect(undefined)
+    args(wkRef).expect()
+    args(Test).expect(0)
+    args(div).expect(0)
+    args(Class).expect(3)
+})
+
+Test.set("getProp", (args) => {
+    args(o, "foo", "age").expect(23)
+    args(o, "foo", "bar").expect(undefined)
+    args("hello").expect(undefined)
+    args(map, "x", "foo").expect("bar")
+    args(wkMap, o).expect(2)
+    args(wkRef, "foo").expect("foo")
+    args(set, "foo").expect(undefined)
+    args(wkSet, o).expect(undefined)
+})
+
+Test.set("isTypedArray", (args) => {
+    args(uint8).expect(true)
+})
+
+
 ///////////////////////////
-Test.logAll()
+//Test.logAll()
+//Test.logOnly("isList")
+Test.logLast()
