@@ -335,8 +335,7 @@ internal.execTest = (statement) => {
                 })
             
             } catch (err) {
-                
-                console.log(err)
+            
                 // Deletar propriedades não usadas nesta ocasião
                 delete testRes.output
                 delete testRes.exam

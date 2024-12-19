@@ -28,21 +28,35 @@ const NUMBER = "number",
     NAN = "NaN",
     /** Testa a existência do global *`window`* e retorna *`true`* caso exista, indicando que o ambiente atual é um navegador. */
     ISWINDOW = typeof window === "object" && window instanceof Window,
-    LIST =
-        [
-            ARRAY,
-            NODELIST,
-            HTMLCOLLECTION,
-            SET,
-            "arguments",
-            "DOMTokenList",
-            "namedNodeMap",
-            "weakSet",
-            "dataView",
-            "blob",
-            "fileList",
-            "formData"
-        ]
+    /** Matriz de objetos tipo Lista */
+    LIST = [
+        ARRAY,
+        NODELIST,
+        HTMLCOLLECTION,
+        SET,
+        "arguments",
+        "DOMTokenList",
+        "namedNodeMap",
+        "weakSet",
+        "dataView",
+        "blob",
+        "fileList",
+        "formData"
+    ],
+    
+    /** Tags de construtores de objetos TypedArray */
+    CHECK_TYPEDARRAY = {
+        '[object Float32Array]': true,
+        '[object Float64Array]': true,
+        '[object Int8Array]': true,
+        '[object Int16Array]': true,
+        '[object Int32Array]': true,
+        '[object Uint8Array]': true,
+        '[object Uint8ClampedArray]': true,
+        '[object Uint16Array]': true,
+        '[object Uint32Array]': true
+    };
+
     //#endregion
 
 // #region SYM internal  ---------------------------
@@ -80,18 +94,17 @@ const _CELL = (function () {
 const AUX = (function () {
     // Os métodos deste objeto só tem permissão para depender dos prórpios métodos.
     const Aux = {}
-
-    Aux.isNIL = (value) => value == null
-    Aux.isNAN = (value) => typeof value === "number" && value !== value
     Aux.typeof = (o) => o === null ? "null" : typeof o
-    /** Usado para criar um *`dictionary`* objeto sem *`prototype`*. @returns {{}} */
-    Aux.nullDict = () => Object.create(null)
+    /** Atalho para *`Object.prototype.toString.call`* */
+    Aux.toStringCall = (o) => Object.prototype.toString.call(o)
+    /** Testa se um valor número é uma medida válida de comprimento de objeto */
+    Aux.isLen = (len)=> Number.isInteger(len) && len >= 0 && len < Number.MAX_SAFE_INTEGER
     /** Usado para testar se um objeto é uma lista indexada. */
     Aux.isList = (list) => {
-        return Flex.is(list, ARRAY, SET, NODELIST, HTMLCOLLECTION, "arguments") || Array.isArray(list) || list instanceof Set || (
+        return Flex.is(list, LIST) || Array.isArray(list) || list instanceof Set || (
             AUX.typeof(list) === "object" &&
             "length" in list && // Testa a existência da propriedade length
-            list.length >= 0 && // Testa se length númerico e positivo
+            AUX.isLen(list.length) &&
             Object.keys(list).every((key) => !isNaN(parseInt(key))) // Testa se todas as chaves são número inteiros
         );
     }
@@ -167,10 +180,10 @@ Flex.type = (target) => {
     // Retornar de imediato "HTMLElement" caso seja uma instância de...
     if (ISWINDOW && target instanceof HTMLElement) { return ELEMENT; }
     //Verificação de tipos NaN
-    else if(AUX.isNAN(target)){return NAN}
+    else if(Flex.isNaN(target)){return NAN}
     // Obter tipo pelo prototype
-    target = Object.prototype.toString.call(target).slice(8, -1);
-    // Retornar de imediato se for um tipo que comece com siglas a maiúsulas, como HTMLCollection, HTMLDocument e etc.
+    target = AUX.toStringCall(target).slice(8, -1);
+    // Retornar de imediato se for um tipo que comece com siglas maiúsulas, como HTMLCollection, HTMLDocument e etc.
     if (_REGX.startAcronym.test(target)) { return target; }
     return target.charAt(0).toLowerCase() + target.slice(1);
 }
@@ -194,7 +207,7 @@ Flex.is = (target, ...types) => {
     if (types.length > 0) {
         // Para null, undefined e NaN
         // >> Testar se o tipo ou se o valor está em ..types. Já que não é possível testar por construtor.
-        if (AUX.isNAN(target) || AUX.isNIL(target)) {
+        if (Flex.isNaN(target) || Flex.isNil(target)) {
             return types.includes(target) || types.includes(tp)
         }
 
@@ -225,15 +238,15 @@ Flex.isPrimitive = (value) => AUX.typeof(value) !== "object" && typeof value !==
 
 /** *`[any]`*
  * * Testa se um valor é um tipo *`NaN`* e retorna um *`boolean`*.
- * @param {*} value > Um valor a ser testado.
+ * @param {unknown} value > Um valor a ser testado.
  */
-Flex.isNaN = (value) => AUX.isNAN(value) 
+Flex.isNaN = (value) => typeof value === "number" && value !== value;
 
 /** *`[any]`*
  * * Testa se um valor é *`null`* ou *`undefined`* e retorna um *`boolean`*.
- * @param {*} value > Um valor a ser testado.
+ * @param {null | undefined} value > Um valor a ser testado.
  */
-Flex.isNil = (value)=> AUX.isNIL(value)
+Flex.isNil = (value)=> value == null
 
 /** * *`[any]`*
  * ---
@@ -242,7 +255,7 @@ Flex.isNil = (value)=> AUX.isNIL(value)
  * @param {*} target > O objeto alvo.
  * @returns {ObjectConstructor}
  */
-Flex.constructorOf = (target) => { return AUX.isNIL(target) ? undefined : Object.getPrototypeOf(target).constructor }
+Flex.constructorOf = (target) => { return Flex.isNil(target) ? undefined : Object.getPrototypeOf(target).constructor }
 
 /** *`[any]`*
  * * Testa se um objeto é um tipo *`"array-like"`* - objeto semelhante a um *`array`* - e retorna um *`boolean`*.
@@ -252,20 +265,14 @@ Flex.constructorOf = (target) => { return AUX.isNIL(target) ? undefined : Object
 Flex.isArrayLike = (target) => !Array.isArray(target) && AUX.isList(target)
 
 /** *`[any]`*
- * * Testa se objeto é um *`TypedArray`*, coleção de dados numéricos de tipo e tamanho fixo, como, por exemplo: *UInt8Array, Int32Array, Float32Array* e etc...
+ * * Testa se objeto é um *`TypedArray`*, coleção de dados numéricos de tipo e tamanho fixo, como, por exemplo: *Uint8Array, Int32Array, Float32Array* e etc...
  * @param {*} target 
  * @returns {boolean}
  */
 Flex.isTypedArray = (target) => {
-    return (target instanceof Int8Array ||
-        target instanceof Uint8Array ||
-        target instanceof Uint8ClampedArray ||
-        target instanceof Int16Array ||
-        target instanceof Uint16Array ||
-        target instanceof Int32Array ||
-        target instanceof Uint32Array ||
-        target instanceof Float32Array ||
-        target instanceof Float64Array)
+    if (target !== undefined) {
+        return AUX.typeof(target) === OBJECT && !!CHECK_TYPEDARRAY[AUX.toStringCall(target)]
+    }
 
 }
 
@@ -285,7 +292,7 @@ Flex.isDict = (target) => !AUX.isList(target) && AUX.typeof(target) == "object" 
  * ---
  * @returns {{}}
  */
-Flex.nullDict = () => AUX.nullDict()
+Flex.nullDict = () => Object.create(null)
 
 /** *`[dictionary]`*
  * * Retorna um *`array`* contendo as chaves de propriedades enumeráveis de um objeto ou uma chave obtida ao especificar o índice.
@@ -340,7 +347,7 @@ Flex.JSONParse = (str, handler) => {
  * @param {object} obj > Um objeto alvo.
  */
 Flex.unproto = (obj) => {
-    !AUX.isNIL(obj) ? Object.setPrototypeOf(obj, null) : null 
+    !Flex.isNil(obj) ? Object.setPrototypeOf(obj, null) : null 
 }
 
 /** *`[object]`*

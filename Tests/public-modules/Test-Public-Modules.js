@@ -283,10 +283,14 @@ Test.set("getProp", (args) => {
 
 Test.set("isTypedArray", (args) => {
     args(uint8).expect(true)
+    args(view).expect(false)
+    args(null).expect(false)
+    args(arr).expect(false)
+    args(undefined).expect(undefined)
 })
 
 
 ///////////////////////////
-//Test.logAll()
+Test.logAll()
 //Test.logOnly("isList")
-Test.logLast()
+//Test.logLast()
