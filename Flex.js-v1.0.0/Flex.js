@@ -92,17 +92,27 @@ const _CELL = (function () {
 // #region AUX internal ---------------------------
 /** Pacote Interno de Métodos Auxiliares */
 const AUX = (function () {
-    // Os métodos deste objeto só tem permissão para depender dos prórpios métodos.
+   
     const Aux = {}
-    Aux.typeof = (o) => o === null ? "null" : typeof o
+    //Aux.typeof = (o) => o === null ? "null" : typeof o
     /** Atalho para *`Object.prototype.toString.call`* */
     Aux.toStringCall = (o) => Object.prototype.toString.call(o)
     /** Testa se um valor número é uma medida válida de comprimento de objeto */
-    Aux.isLen = (len)=> Number.isInteger(len) && len >= 0 && len < Number.MAX_SAFE_INTEGER
+    Aux.isLen = (len) => Number.isInteger(len) && len >= 0 && len < Number.MAX_SAFE_INTEGER
+    
+    /** Usado para buscar por uma propriedade de um objeto que indique seu comprimento. */
+    Aux.findLen = (o, ...lenKeys) => {
+        let prop
+        for (let i = 0; i < lenKeys.length; i++){
+            prop = o[lenKeys[i]]
+            if(AUX.isLen(prop)){return prop}
+            
+        }
+    }
     /** Usado para testar se um objeto é uma lista indexada. */
     Aux.isList = (list) => {
         return Flex.is(list, LIST) || Array.isArray(list) || list instanceof Set || (
-            AUX.typeof(list) === "object" &&
+            Flex.typeof(list) === "object" &&
             "length" in list && // Testa a existência da propriedade length
             AUX.isLen(list.length) &&
             Object.keys(list).every((key) => !isNaN(parseInt(key))) // Testa se todas as chaves são número inteiros
@@ -134,7 +144,7 @@ const AUX = (function () {
 
     /** Usado para obter uma das propriedades se existente em um objeto */
     Aux.someProp = (o, ...keys) => {
-        if (AUX.typeof(o) === OBJECT) {
+        if (Flex.typeof(o) === OBJECT) {
             let is = {
                 MAPWEAK: Flex.is(o, "map", "weakMap"),
                 WEAKREF: Flex.type(o) === "weakRef"
@@ -165,7 +175,6 @@ const AUX = (function () {
     return Aux
 })();
 //#endregion
-
 // FLEX.JS Módulos Públicos   ●    ●    ●    ●    ●    ●    ●    ●    ●
 
 // #region [ANY] ----------------------
@@ -194,7 +203,7 @@ Flex.type = (target) => {
  * @param {*} target Uma valor ou objeto a ser analisado.
  * @returns {typeof}
  */
-Flex.typeof = (target)=>AUX.typeof(target)
+Flex.typeof = (target) => target === null ? "null" : typeof target
 
 /** *`[any]`*
  * * Testa se o tipo de um dado ou objeto corresponde a um dos tipos passados em *`(...types)`* e retorna um *`boolean`*.
@@ -233,7 +242,7 @@ Flex.is = (target, ...types) => {
  * ---
  * @param {any} value > Um valor a ser testado. 
  */
-Flex.isPrimitive = (value) => AUX.typeof(value) !== "object" && typeof value !== "function"
+Flex.isPrimitive = (value) => Flex.typeof(value) !== "object" && typeof value !== "function"
 
 
 /** *`[any]`*
@@ -271,7 +280,7 @@ Flex.isArrayLike = (target) => !Array.isArray(target) && AUX.isList(target)
  */
 Flex.isTypedArray = (target) => {
     if (target !== undefined) {
-        return AUX.typeof(target) === OBJECT && !!CHECK_TYPEDARRAY[AUX.toStringCall(target)]
+        return Flex.typeof(target) === OBJECT && !!CHECK_TYPEDARRAY[AUX.toStringCall(target)]
     }
 
 }
@@ -285,12 +294,14 @@ Flex.isTypedArray = (target) => {
  * 
  * @param {object} target > Uma objeto a ser testado.
  */
-Flex.isDict = (target) => !AUX.isList(target) && AUX.typeof(target) == "object" && Flex.type(target) !== "HTMLElement"
+Flex.isDict = (target) => {
+    return !AUX.isList(target) && Flex.typeof(target) == "object" && Flex.type(target) !== "HTMLElement"
+}
 
 /** *`[dictionary]`*
  * * Cria um *`object`* vazio sem um *`prototype`*.
  * ---
- * @returns {{}}
+ * @returns {typeof object}}
  */
 Flex.nullDict = () => Object.create(null)
 
@@ -364,11 +375,11 @@ Flex.len = (collection) => {
     // Objetos genéricos - obtér qunatidade de chaves
     if (Flex.type(collection) === OBJECT) {
         return Object.keys(collection).length  
-    } else if (AUX.typeof(collection) === OBJECT || typeof collection === STRING) {
+    } else if (Flex.typeof(collection) === OBJECT || typeof collection === STRING) {
         // forçar retorno undefined para weaks object, pois sempre retornam 0
         if(Flex.is(collection, WeakMap, WeakSet, WeakRef)){return undefined}
         // Obter propriedades que indicam o comprimento de um objeto, se nenhum for encontrado, tentar obter comprimento das chaves como última opção
-        return AUX.someProp(collection, "length", "size", "byteLenght") ?? Object.keys(collection).length
+        return AUX.findLen(collection, "length", "size", "byteLenght") ?? Object.keys(collection).length
     }
 }
 

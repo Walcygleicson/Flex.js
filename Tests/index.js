@@ -12,4 +12,7 @@ const map = new Map([["color", "red"], ["form", "exagon"]])
 const list = {}
 const weakMap = new WeakMap([[obj, 2]]);
 Object.defineProperty(list, "length", { value: 0 })
-console.log(Number.isInteger("0"))
+
+
+const o = _.nullDict()
+o.oi = 1
