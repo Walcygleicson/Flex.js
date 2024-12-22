@@ -19,6 +19,7 @@ const NUMBER = "Number",
     OBJECT = "Object",
     FUNCTION = "Function",
     SYMBOL = "Symbol",
+    BIGINT = "BigInt",
     REGEXP = "RegExp",
     ELEMENT = "HTMLElement",
     HTMLCOLLECTION = "HTMLCollection",
@@ -44,16 +45,15 @@ const CHECK = (function () {
         [NODELIST]: true,
         [HTMLCOLLECTION]: true,
         [SET]: true,
-        arguments: true,
+        Arguments: true,
         DOMTokenList: true,
-        namedNodeMap: true,
-        weakSet: true,
-        dataView: true,
-        blob: true,
-        fileList: true,
-        formData: true,
+        NamedNodeMap: true,
+        [WEAKSET]: true,
+        DataView: true,
+        Blob: true,
+        FileList: true,
+        FormData: true,
     };
-
     /** Mapa de construtores de TypedArrays */
     _check.typedArray = {
         "[object Float32Array]": true,
@@ -65,7 +65,15 @@ const CHECK = (function () {
         "[object Uint8ClampedArray]": true,
         "[object Uint16Array]": true,
         "[object Uint32Array]": true,
-    };
+        "[object BigInt64Array]": true,
+        "[object BigUint64Array]": true,
+    }
+
+    _check.weakObject = {
+        [WEAKMAP]: true,
+        [WEAKSET]: true,
+        [WEAKREF]: true,
+    }
 
     return _check
 })()
@@ -125,17 +133,20 @@ const AUX = (function () {
     /** Usado para testar se um objeto é uma lista indexada. */
     _aux.isList = (list) => {
         return CHECK.list[Flex.type(list)] || (
-            Flex.typeof(list) === OBJECT &&
+            Flex.typeof(list) === "object" &&
             "length" in list && // Testa a existência da propriedade length
             AUX.isLen(list.length) &&
             Object.keys(list).every((key, i) => !isNaN(parseInt(key)) && i == key) // Testa se todas as chaves são número inteiros
         );
     }
+
+    _aux.isFakeArr = (o) => AUX.isList(o) && Flex.type(o) === OBJECT
+    
     /** Usado para obter lista de chaves de propriedades enumeráveis de coleções chaveadas*/
     _aux.getKeys = (o, i) => {
-        if (o instanceof Map) {
-            return i === undefined ? [...o.keys()] : o.keys()[i]
-        } else if (Flex.isDict(o)) {
+        if (o instanceof Map) { return i === undefined ? [...o.keys()] : o.keys()[i] }
+        // Testar se o é um object antes de testar se é um dict para casos de fakeArrays
+        else if (Flex.type(o) === OBJECT || Flex.isDict(o)) {
             return i === undefined? Object.keys(o) : Object.keys(o)[i]
         }
     }
@@ -198,9 +209,9 @@ const AUX = (function () {
  * @returns {Type}
  */
 Flex.type = (target) => {
-    if (ISWINDOW && target instanceof HTMLElement) { return ELEMENT }
-    else if (Number.isNaN(target)) { return NAN }
-    else {return AUX.toStringCall(target).slice(8, -1)}
+    if (ISWINDOW && target instanceof HTMLElement) return ELEMENT;
+    return Number.isNaN(target) ? NAN : Object.prototype.toString.call(target).slice(8, -1);
+
 }
 
 /** *`[any]`*
@@ -218,23 +229,23 @@ Flex.typeof = (target) => target === null ? "null" : typeof target
  * @param {...Type | ObjectConstructor} types > O tipo esperado.
  */
 Flex.is = (target, ...types) => {
-    let tp = Flex.type(target)
+    let type = Flex.type(target)
     if (types.length > 0) {
         // Para null, undefined e NaN
         // >> Testar se o tipo ou se o valor está em ..types. Já que não é possível testar por construtor.
         if (Flex.isNaN(target) || Flex.isNil(target)) {
-            return types.includes(target) || types.includes(tp)
+            return types.includes(target) || types.includes(type)
         }
 
         // Para outros tipos
         return types.some((value) => {
             // Para HTMLElement, especificamente.
             // >> Primeiro comparar construtor e herança. Se false, passar para a próxima comparação.
-            if (tp === "HTMLElement" && typeof value === "function" && value !== Object) {
+            if (type === ELEMENT && typeof value === "function" && value !== Object) {
                 return target instanceof value
             }
             //Comparar tipo e construtor.
-            return tp == value || Object.getPrototypeOf(target).constructor === value
+            return type == value || Object.getPrototypeOf(target).constructor === value
             
         })
         
@@ -280,12 +291,12 @@ Flex.isArrayLike = (target) => !Array.isArray(target) && AUX.isList(target)
 
 /** *`[any]`*
  * * Testa se objeto é um *`TypedArray`*, coleção de dados numéricos de tipo e tamanho fixo, como, por exemplo: *Uint8Array, Int32Array, Float32Array* e etc...
- * @param {*} target 
+ * @param {ArrayBufferLike} target > Um objeto *`view`* para *`ArrayBuffer`*.
  * @returns {boolean}
  */
 Flex.isTypedArray = (target) => {
     if (target !== undefined) {
-        return Flex.typeof(target) === OBJECT && !!CHECK.typedArray[AUX.toStringCall(target)]
+        return Flex.typeof(target) === "object" && !!CHECK.typedArray[AUX.toStringCall(target)]
     }
 
 }
@@ -377,12 +388,13 @@ Flex.getProp = (obj, ...keys) => AUX.someProp(obj, ...keys)
 
 // #region [COLLECTION] ---------------
 Flex.len = (collection) => {
+    let type = Flex.type(collection)
     // Objetos genéricos - obtér qunatidade de chaves
-    if (Flex.type(collection) === OBJECT) {
+    if (type === OBJECT) {
         return Object.keys(collection).length
-    } else if (Flex.typeof(collection) === OBJECT || typeof collection === STRING) {
+    } else if (Flex.typeof(collection) === "object" || typeof collection === "string") {
         // forçar retorno undefined para weaks object, pois sempre retornam 0
-        if(Flex.is(collection, WEAKMAP, WEAKSET, WEAKREF)){return undefined}
+        if(CHECK.weakObject[type]){return undefined}
         // Obter propriedades que indicam o comprimento de um objeto, se nenhum for encontrado, tentar obter comprimento das chaves como última opção
         return AUX.findLen(collection, "length", "size", "byteLenght") ?? Object.keys(collection).length
     }
@@ -390,6 +402,16 @@ Flex.len = (collection) => {
 
 //#endregion --------------------------
 
+// #region [NUMBER] --------------------
+
+/** *`[number | string]`*
+ * * Testa se um valor é um número inteiro e retorna um *`boolean`*. Se o resultado for *`false`*, indica que é um *`float`*. Já se o resultado for *`undefined`*, indica que o valor fornecido não é numérico.
+ * ---
+ * @param {number | string} num > Um número a ser testado.
+ */
+Flex.isInt = (num) => Flex.type(num) === BIGINT || (Number(num) ? num % 1 === 0 : undefined)
+
+// #endregion --------------------------
 
 
 // #regin [ERROR]-----------------------
@@ -409,7 +431,7 @@ export {AUX}
 // #region @typedef   ●    ●    ●    ●    ●    ●    ●    ●    ●
 //--- [Conjunto de typedef]
 /**
- * @typedef {"number"|"function"|"bigInt"|"symbol"|"undefined"|"array"|"object"|"string"|"HTMLElement"|"HTMLCollection"|"nodeList"|"set"|"map"|"null"|"boolean"|"date"|"window"|"HTMLDocument"|"error"|"animation"|"arrayBuffer"|"blob"|"namedNodeMap"|"DOMTokenList"|"pinterEvent"|"mouseEvent"|"event"|"DOMParser"|"styleSheetList"|"CSSStyleSheet"|"cssRuleList"|"text"|"comment"|"NaN"} Type
+ * @typedef {"Number"|"Function"|"BigInt"|"Symbol"|"Undefined"|"Array"|"Object"|"String"|"HTMLElement"|"HTMLCollection"|"NodeList"|"Set"|"Map"|"Null"|"Boolean"|"Date"|"Window"|"HTMLDocument"|"Error"|"Animation"|"ArrayBuffer"|"Blob"|"NamedNodeMap"|"DOMTokenList"|"PointerEvent"|"MouseEvent"|"Event"|"DOMParser"|"StyleSheetList"|"CSSStyleSheet"|"CssRuleList"|"Text"|"Comment"|"NaN"|"DataView"|"File"} Type
  * 
  * @typedef {{}} Dictionary Uma coleção de pares de chave e valor.
  * 

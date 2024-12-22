@@ -53,6 +53,8 @@ const wkSet = new WeakSet([o, map])
 const buffer = new ArrayBuffer(1, 2.5, 7, 8)
 const view = new DataView(buffer)
 const uint8 = new Uint8Array(buffer)
+const bigint = 3284875500n
+const bigInt64Array = new BigInt64Array(12)
 
 //////////////////////////////////////////////
 Test.set("type", (args) => {
@@ -190,7 +192,7 @@ Test.set("keys", (args) => {
     args(o).expect(["name", "age"])
     args(set).expect(undefined)
     args(map).expect(["foo", "say", 1, sym])
-    args(fakeArr).expect(undefined)
+    args(fakeArr).expect(["0"])
     args(prox).expect([])
     args(null).expect(undefined)
     args(o, 1).expect("age")
@@ -295,8 +297,21 @@ Test.set("isTypedArray", (args) => {
     args(null).expect(false)
     args(arr).expect(false)
     args(undefined).expect(undefined)
+    args(bigInt64Array).expect(true)
+    args(buffer).expect(false)
 })
 
+Test.set("isInt", (args) => {
+    args(1).expect(true)
+    args(-1).expect(true)
+    args("1").expect(true)
+    args("-1").expect(true)
+    args("oi").expect(undefined)
+    args(null).expect(undefined)
+    args("1.0").expect(true)
+    args(NaN).expect(undefined)
+    args(2345n).expect(true)
+})
 
 ///////////////////////////
 Test.logAll()
