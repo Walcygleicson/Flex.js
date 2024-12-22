@@ -57,24 +57,24 @@ const uint8 = new Uint8Array(buffer)
 //////////////////////////////////////////////
 Test.set("type", (args) => {
     args(NaN).expect("NaN")
-    args(1).expect("number")
-    args("Hello").expect("string")
-    args([]).expect("array")
-    args({}).expect("object")
-    args(function () { }).expect("function")
-    args(null).expect("null")
-    args(window).expect("window")
+    args(1).expect("Number")
+    args("Hello").expect("String")
+    args([]).expect("Array")
+    args({}).expect("Object")
+    args(function () { }).expect("Function")
+    args(null).expect("Null")
+    args(window).expect("Window")
     args(div).expect("HTMLElement")
-    args(ndList).expect("nodeList")
+    args(ndList).expect("NodeList")
     args(HTMLCollct).expect("HTMLCollection")
     args(document).expect("HTMLDocument")
-    args(comment).expect("comment")
+    args(comment).expect("Comment")
     
 })
 
 Test.set("is", (args) => {
     args(NaN, Number).expect(false)
-    args(NaN, "number").expect(false)
+    args(NaN, "Number").expect(false)
     args(NaN, Number, NaN).expect(true) // Teste NaN por valor.
     args(NaN, Number, "NaN").expect(true) // Teste NaN por tipo.
     args(NaN, 0).expect(false)
@@ -88,8 +88,8 @@ Test.set("is", (args) => {
     args([], Object).expect(false)
     args(new Object([]), Object).expect(false)
     args().expect(undefined) //Se todos os parâmetros omitidos.
-    args(1, "string", "number", "array").expect(true)
-    args(1, "string", "array").expect(false);
+    args(1, "String", "Number", "Array").expect(true)
+    args(1, "String", "Array").expect(false);
     args(1).expect(undefined) // Se o último param omitido.
     args(1, String).expect(false)
 })
@@ -210,6 +210,9 @@ Test.set("isList", (args) => {
     args(domTokemList).expect(true)
     args(div.attributes).expect(true)
     args(set).expect(true)
+    args(view).expect(true)
+    args(uint8).expect(true)
+    args(buffer).expect(false) // Buffer de array não é uma lista
 })
 
 Test.set("JSONParse", (args) => {
@@ -251,6 +254,9 @@ Test.set("unproto", (args) => {
 
 
 Test.set("len", (args) => {
+    /** FakeArr com length errado */
+    const fArr = { 0: "foo", 1: "buu" }
+    Object.defineProperty(fArr, "length", {value: 5})
     args("hello").expect(5)
     args(o).expect(2)
     args(arr).expect(4)
@@ -268,6 +274,8 @@ Test.set("len", (args) => {
     args(Test).expect(0)
     args(div).expect(0)
     args(Class).expect(3)
+    args(fArr).expect(2)
+
 })
 
 Test.set("getProp", (args) => {

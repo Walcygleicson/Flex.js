@@ -13,51 +13,63 @@ Object.freeze(Flex.ABOUT)
 
 // #region DATAS internal ----------------------
 // ----- [Conjunto de tipos de dados e objetos]
-const NUMBER = "number",
-    STRING = "string",
-    ARRAY = "array",
-    OBJECT = "object",
-    FUNCTION = "function",
-    SYMBOL = "symbol",
-    REGEXP = "regExp",
+const NUMBER = "Number",
+    STRING = "String",
+    ARRAY = "Array",
+    OBJECT = "Object",
+    FUNCTION = "Function",
+    SYMBOL = "Symbol",
+    REGEXP = "RegExp",
     ELEMENT = "HTMLElement",
     HTMLCOLLECTION = "HTMLCollection",
-    NODELIST = "nodeList",
-    SET = "set",
-    MAP = "map",
+    NODELIST = "NodeList",
+    SET = "Set",
+    MAP = "Map",
     NAN = "NaN",
+    WEAKMAP = "WeakMap",
+    WEAKSET = "WeakSet",
+    WEAKREF = "WeakRef",
     /** Testa a existência do global *`window`* e retorna *`true`* caso exista, indicando que o ambiente atual é um navegador. */
-    ISWINDOW = typeof window === "object" && window instanceof Window,
-    /** Matriz de objetos tipo Lista */
-    LIST = [
-        ARRAY,
-        NODELIST,
-        HTMLCOLLECTION,
-        SET,
-        "arguments",
-        "DOMTokenList",
-        "namedNodeMap",
-        "weakSet",
-        "dataView",
-        "blob",
-        "fileList",
-        "formData"
-    ],
-    
-    /** Tags de construtores de objetos TypedArray */
-    CHECK_TYPEDARRAY = {
-        '[object Float32Array]': true,
-        '[object Float64Array]': true,
-        '[object Int8Array]': true,
-        '[object Int16Array]': true,
-        '[object Int32Array]': true,
-        '[object Uint8Array]': true,
-        '[object Uint8ClampedArray]': true,
-        '[object Uint16Array]': true,
-        '[object Uint32Array]': true
+    ISWINDOW = typeof window === "object" && window instanceof Window
+
+//#endregion
+
+// #region CHECK internal --------------------------
+/** Pacote interno de *`Hash Tables`* para checagem de valores. */
+const CHECK = (function () {
+    const _check = {}
+    /** Mapa de tipos considerados Listas */
+    _check.list = {
+        [ARRAY]: true,
+        [NODELIST]: true,
+        [HTMLCOLLECTION]: true,
+        [SET]: true,
+        arguments: true,
+        DOMTokenList: true,
+        namedNodeMap: true,
+        weakSet: true,
+        dataView: true,
+        blob: true,
+        fileList: true,
+        formData: true,
     };
 
-    //#endregion
+    /** Mapa de construtores de TypedArrays */
+    _check.typedArray = {
+        "[object Float32Array]": true,
+        "[object Float64Array]": true,
+        "[object Int8Array]": true,
+        "[object Int16Array]": true,
+        "[object Int32Array]": true,
+        "[object Uint8Array]": true,
+        "[object Uint8ClampedArray]": true,
+        "[object Uint16Array]": true,
+        "[object Uint32Array]": true,
+    };
+
+    return _check
+})()
+// #endregion --------------------------------------
 
 // #region SYM internal  ---------------------------
 /** Pacote Interno de Symbols */
@@ -93,15 +105,15 @@ const _CELL = (function () {
 /** Pacote Interno de Métodos Auxiliares */
 const AUX = (function () {
    
-    const Aux = {}
-    //Aux.typeof = (o) => o === null ? "null" : typeof o
+    const _aux = {}
+   
     /** Atalho para *`Object.prototype.toString.call`* */
-    Aux.toStringCall = (o) => Object.prototype.toString.call(o)
+    _aux.toStringCall = (o) => Object.prototype.toString.call(o)
     /** Testa se um valor número é uma medida válida de comprimento de objeto */
-    Aux.isLen = (len) => Number.isInteger(len) && len >= 0 && len < Number.MAX_SAFE_INTEGER
+    _aux.isLen = (len) => Number.isInteger(len) && len >= 0 && len < Number.MAX_SAFE_INTEGER
     
     /** Usado para buscar por uma propriedade de um objeto que indique seu comprimento. */
-    Aux.findLen = (o, ...lenKeys) => {
+    _aux.findLen = (o, ...lenKeys) => {
         let prop
         for (let i = 0; i < lenKeys.length; i++){
             prop = o[lenKeys[i]]
@@ -109,17 +121,18 @@ const AUX = (function () {
             
         }
     }
+    
     /** Usado para testar se um objeto é uma lista indexada. */
-    Aux.isList = (list) => {
-        return Flex.is(list, LIST) || Array.isArray(list) || list instanceof Set || (
-            Flex.typeof(list) === "object" &&
+    _aux.isList = (list) => {
+        return CHECK.list[Flex.type(list)] || (
+            Flex.typeof(list) === OBJECT &&
             "length" in list && // Testa a existência da propriedade length
             AUX.isLen(list.length) &&
-            Object.keys(list).every((key) => !isNaN(parseInt(key))) // Testa se todas as chaves são número inteiros
+            Object.keys(list).every((key, i) => !isNaN(parseInt(key)) && i == key) // Testa se todas as chaves são número inteiros
         );
     }
     /** Usado para obter lista de chaves de propriedades enumeráveis de coleções chaveadas*/
-    Aux.getKeys = (o, i) => {
+    _aux.getKeys = (o, i) => {
         if (o instanceof Map) {
             return i === undefined ? [...o.keys()] : o.keys()[i]
         } else if (Flex.isDict(o)) {
@@ -127,7 +140,7 @@ const AUX = (function () {
         }
     }
     /** Obtém valores das propriedades de um objeto ou valores de um objeto Set */
-    Aux.getValues = (o, i) => {
+    _aux.getValues = (o, i) => {
         if (o instanceof Map || o instanceof Set) {
             return i === undefined ? [...o.values()] : o.values()[i]
         } else if (Flex.isDict(o)) {
@@ -136,14 +149,14 @@ const AUX = (function () {
     }
 
     /** @returns {PropertyDescriptor} */
-    Aux.propDescriptor = (o, prop) => {
+    _aux.propDescriptor = (o, prop) => {
         if (AUX.typeof(o) === OBJECT) {
             return Object.getOwnPropertyDescriptor(o, prop) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(o), prop)
         }
     }
 
     /** Usado para obter uma das propriedades se existente em um objeto */
-    Aux.someProp = (o, ...keys) => {
+    _aux.someProp = (o, ...keys) => {
         if (Flex.typeof(o) === OBJECT) {
             let is = {
                 MAPWEAK: Flex.is(o, "map", "weakMap"),
@@ -169,14 +182,13 @@ const AUX = (function () {
         }
     }
 
-    Aux.isSETorMAP = (o) => o instanceof Set || o instanceof Map
+    _aux.isSETorMAP = (o) => o instanceof Set || o instanceof Map
     
     
-    return Aux
+    return _aux
 })();
 //#endregion
 // FLEX.JS Módulos Públicos   ●    ●    ●    ●    ●    ●    ●    ●    ●
-
 // #region [ANY] ----------------------
 
 /** *`[any]`*
@@ -186,15 +198,9 @@ const AUX = (function () {
  * @returns {Type}
  */
 Flex.type = (target) => {
-    // Retornar de imediato "HTMLElement" caso seja uma instância de...
-    if (ISWINDOW && target instanceof HTMLElement) { return ELEMENT; }
-    //Verificação de tipos NaN
-    else if(Flex.isNaN(target)){return NAN}
-    // Obter tipo pelo prototype
-    target = AUX.toStringCall(target).slice(8, -1);
-    // Retornar de imediato se for um tipo que comece com siglas maiúsulas, como HTMLCollection, HTMLDocument e etc.
-    if (_REGX.startAcronym.test(target)) { return target; }
-    return target.charAt(0).toLowerCase() + target.slice(1);
+    if (ISWINDOW && target instanceof HTMLElement) { return ELEMENT }
+    else if (Number.isNaN(target)) { return NAN }
+    else {return AUX.toStringCall(target).slice(8, -1)}
 }
 
 /** *`[any]`*
@@ -227,7 +233,6 @@ Flex.is = (target, ...types) => {
             if (tp === "HTMLElement" && typeof value === "function" && value !== Object) {
                 return target instanceof value
             }
-
             //Comparar tipo e construtor.
             return tp == value || Object.getPrototypeOf(target).constructor === value
             
@@ -280,7 +285,7 @@ Flex.isArrayLike = (target) => !Array.isArray(target) && AUX.isList(target)
  */
 Flex.isTypedArray = (target) => {
     if (target !== undefined) {
-        return Flex.typeof(target) === OBJECT && !!CHECK_TYPEDARRAY[AUX.toStringCall(target)]
+        return Flex.typeof(target) === OBJECT && !!CHECK.typedArray[AUX.toStringCall(target)]
     }
 
 }
@@ -374,10 +379,10 @@ Flex.getProp = (obj, ...keys) => AUX.someProp(obj, ...keys)
 Flex.len = (collection) => {
     // Objetos genéricos - obtér qunatidade de chaves
     if (Flex.type(collection) === OBJECT) {
-        return Object.keys(collection).length  
+        return Object.keys(collection).length
     } else if (Flex.typeof(collection) === OBJECT || typeof collection === STRING) {
         // forçar retorno undefined para weaks object, pois sempre retornam 0
-        if(Flex.is(collection, WeakMap, WeakSet, WeakRef)){return undefined}
+        if(Flex.is(collection, WEAKMAP, WEAKSET, WEAKREF)){return undefined}
         // Obter propriedades que indicam o comprimento de um objeto, se nenhum for encontrado, tentar obter comprimento das chaves como última opção
         return AUX.findLen(collection, "length", "size", "byteLenght") ?? Object.keys(collection).length
     }
