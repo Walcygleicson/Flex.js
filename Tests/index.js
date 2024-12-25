@@ -20,5 +20,10 @@ const map = new Map([["color", "red"], ["form", "exagon"]])
 const bigint = 394856500n
 const fakeArr = {0: "foo", 1: "bar", "2.0": "bu"}
 const weakMap = new WeakMap([[ob, 2]]);
+const weakRef = new WeakRef({
+    name: "Walcy",
+    age: 28
+})
 const bigfloat = 11111111111491018.0123456789012345
 Object.defineProperty(fakeArr, "length", { value: 2 })
+console.log(_.capitalize(" ..."))

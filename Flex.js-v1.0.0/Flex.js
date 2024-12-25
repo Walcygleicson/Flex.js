@@ -140,31 +140,12 @@ const AUX = (function () {
         );
     }
 
-    _aux.isFakeArr = (o) => AUX.isList(o) && Flex.type(o) === OBJECT
-    
-    /** Usado para obter lista de chaves de propriedades enumeráveis de coleções chaveadas*/
-    _aux.getKeys = (o, i) => {
-        if (o instanceof Map) { return i === undefined ? [...o.keys()] : o.keys()[i] }
-        // Testar se o é um object antes de testar se é um dict para casos de fakeArrays
-        else if (Flex.type(o) === OBJECT || Flex.isDict(o)) {
-            return i === undefined? Object.keys(o) : Object.keys(o)[i]
-        }
-    }
-    /** Obtém valores das propriedades de um objeto ou valores de um objeto Set */
-    _aux.getValues = (o, i) => {
-        if (o instanceof Map || o instanceof Set) {
-            return i === undefined ? [...o.values()] : o.values()[i]
-        } else if (Flex.isDict(o)) {
-          return i === undefined? Object.values(o) : Object.values(o)[i]
-        }
-    }
-
     /** @returns {PropertyDescriptor} */
-    _aux.propDescriptor = (o, prop) => {
-        if (AUX.typeof(o) === OBJECT) {
-            return Object.getOwnPropertyDescriptor(o, prop) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(o), prop)
-        }
-    }
+    // _aux.propDescriptor = (o, prop) => {
+    //     if (AUX.typeof(o) === OBJECT) {
+    //         return Object.getOwnPropertyDescriptor(o, prop) || Object.getOwnPropertyDescriptor(Object.getPrototypeOf(o), prop)
+    //     }
+    // }
 
     /** Usado para obter uma das propriedades se existente em um objeto */
     _aux.someProp = (o, ...keys) => {
@@ -193,7 +174,8 @@ const AUX = (function () {
         }
     }
 
-    _aux.isSETorMAP = (o) => o instanceof Set || o instanceof Map
+    /** Usado para obter um item de uma lista caso um index seja fornecido, se não, a lista é retornada. */
+    _aux.tryGetItem = (list, i) => i >= 0? list[i] : list
     
     
     return _aux
@@ -310,34 +292,55 @@ Flex.isTypedArray = (target) => {
  * 
  * @param {object} target > Uma objeto a ser testado.
  */
-Flex.isDict = (target) => {
-    return !AUX.isList(target) && Flex.typeof(target) == "object" && Flex.type(target) !== "HTMLElement"
-}
+Flex.isDict = (target) => !AUX.isList(target) && Flex.typeof(target) == "object"
 
 /** *`[dictionary]`*
- * * Cria um *`object`* vazio sem um *`prototype`*.
+ * * Cria um *`object`* de *`prototype`* nulo.
  * ---
- * @returns {typeof object}}
+ * @param {PropertyDescriptorMap & ThisType<any>} [propsDescriptor] > Objeto que define descritores de propriedades adicionais para o novo objeto.
+ * @returns {typeof object}
  */
-Flex.nullDict = () => Object.create(null)
+Flex.nullDict = (propsDescriptor={}) => Object.create(null, propsDescriptor)
 
 /** *`[dictionary]`*
  * * Retorna um *`array`* contendo as chaves de propriedades enumeráveis de um objeto ou uma chave obtida ao especificar o índice.
  * ---
  * @param {Dictionary} dict > Um *`dictionary`* objeto.
- * @param {number} keyIndex > O índice da chave requerida.
+ * @param {number} index > O índice de um item a ser obtido.
  * @returns {Array<string> | string}
  */
-Flex.keys = (dict, keyIndex) => AUX.getKeys(dict, keyIndex)
+Flex.keys = (dict, index) => {
+    if (dict instanceof Map) {return AUX.tryGetItem([...dict.keys()], index)}
+    //
+    let type = Flex.type(dict)
+    if (type === WEAKREF) {
+        type = null
+        return AUX.tryGetItem(Object.keys(dict.deref()), index)
+    } else if (type === OBJECT || Flex.isDict(dict)) {
+        type = null
+        return AUX.tryGetItem([...Object.keys(dict)], index)
+    }
+}
 
 /** *`[dictionary]`*
  * * Retorna um *`array`* contendo os valores das propriedades enumeráveis de um objeto ou um único valor obtido ao especificar o índice. Da mesma forma também obtém os valores de um objeto *`Set`*, embora não seja um considerado *`"dictionary"`*.
  * ---
  * @param {Dictionary} dict > Um *`dictionary`* objeto.
- * @param {number} keyIndex > O índice da chave requerida.
+ * @param {number} index > O índice de um item a ser obtido.
  * @returns {Array<unknown> | unknown}
  */
-Flex.values = (dict, keyIndex) => AUX.getValues(dict, keyIndex)
+Flex.values = (dict, index) => {
+    if (dict instanceof Map || dict instanceof Set) { return AUX.tryGetItem([...dict.values()], index)
+    }
+    let type = Flex.type(dict)
+    if (type === WEAKREF) {
+        type = null
+        return AUX.tryGetItem(Object.values(dict.deref()), index)
+    } else if (type === OBJECT || Flex.isDict(dict)) {
+        type = null
+        return AUX.tryGetItem([...Object.values(dict)], index)
+    }
+}
 
 //#endregion---------------------------
 
@@ -364,6 +367,14 @@ Flex.JSONParse = (str, handler) => {
         return undefined
     }
 }
+
+/** *`[string]`*
+ * * Transforma o primeiro caractere alfanumérico encontrado para maiúsculo e retorna a *`string`* capitalizada. Este método ignora caracteres de espaço e símbolos.
+ * @param {string} str > Uma string a ser capitalizada.
+ */
+Flex.capitalize = (str) => {
+    return typeof str === "string"? str.replace(/\b\w/, (match) => match.toUpperCase()) : undefined
+}
 // #endregion -----------------------------
 
 // #region [OBJECT]--------------------
@@ -383,7 +394,31 @@ Flex.unproto = (obj) => {
  * @param {object} obj > Um objeto de propriedades. 
  * @param  {...any} keys > Uma ou mais chaves de propriedades para a busca.
  */
-Flex.getProp = (obj, ...keys) => AUX.someProp(obj, ...keys)
+Flex.getProp = (obj, ...keys) => {
+    if (Flex.typeof(obj) === "object") {
+        let type = Flex.type(obj)
+        let key
+        let output
+
+        for (let i = 0; i < keys.length; i++) {
+            key = keys[i]
+
+            if (type === MAP || type === WEAKMAP) {
+                output = obj.get(key)
+            } else if (type === WEAKREF) {
+                output = obj.deref()[key]
+            } else {
+                output = obj[key]
+            }
+
+            // Não retornar enquanto output for undefined
+            if (output !== undefined) {
+                type = null, key = null
+                return output
+            }
+        }
+    }
+}
 //#endregion --------------------------
 
 // #region [COLLECTION] ---------------

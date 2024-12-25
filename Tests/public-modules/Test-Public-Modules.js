@@ -57,6 +57,8 @@ const bigint = 3284875500n
 const bigInt64Array = new BigInt64Array(12)
 
 //////////////////////////////////////////////
+// #region [TESTS] -------------------------------
+
 Test.set("type", (args) => {
     args(NaN).expect("NaN")
     args(1).expect("Number")
@@ -184,8 +186,9 @@ Test.set("isDict", (args) => {
     args(prox).expect(true)
     args(Test).expect(true)
     args(set).expect(false)
-    args(div).expect(false)
+    args(div).expect(true)
     args(HTMLCollct).expect(false)
+    args(buffer).expect(true)
 })
 
 Test.set("keys", (args) => {
@@ -197,7 +200,22 @@ Test.set("keys", (args) => {
     args(null).expect(undefined)
     args(o, 1).expect("age")
     args(o, 10).expect(undefined)
-    args(div).expect(undefined)
+    args(div).expect([])
+    args(buffer).expect([])
+    args(wkMap).expect([])
+    args(wkRef).expect(["foo", "num"])
+})
+
+Test.set("values", (args) => {
+    args(o).expect(["foo", 23])
+    args(set).expect(["foo", 1, true, Symbol])
+    args(map).expect(["bar", "hello", true, true])
+    args([1, 2, 3, "foo"]).expect(undefined)
+    args(fakeArr).expect(["foo"])
+    args(buffer).expect([])
+    args(view).expect(undefined)
+    args(wkRef).expect(["foo", 2.4])
+    args(wkRef, 1).expect(2.4)
 })
 
 Test.set("isList", (args) => {
@@ -253,7 +271,6 @@ Test.set("unproto", (args) => {
         }
     });
 })
-
 
 Test.set("len", (args) => {
     /** FakeArr com length errado */
@@ -313,7 +330,18 @@ Test.set("isInt", (args) => {
     args(2345n).expect(true)
 })
 
+Test.set("capitalize", (args) => {
+    args("hello").expect("Hello")
+    args("   hello").expect("   Hello")
+    args("** hello").expect("** Hello")
+    args("hello world").expect("Hello world")
+    args(" 1 hello").expect(" 1 hello")
+    args(" heLLo").expect(" HeLLo")
+})
+
+// #endregion
+
 ///////////////////////////
-Test.logAll()
-//Test.logOnly("isList")
-//Test.logLast()
+//Test.logAll()
+//Test.logOnly("getProp")
+Test.logLast(true)
