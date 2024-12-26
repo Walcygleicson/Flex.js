@@ -26,4 +26,3 @@ const weakRef = new WeakRef({
 })
 const bigfloat = 11111111111491018.0123456789012345
 Object.defineProperty(fakeArr, "length", { value: 2 })
-console.log(_.capitalize(" ..."))

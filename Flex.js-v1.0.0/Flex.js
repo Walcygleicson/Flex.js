@@ -102,10 +102,26 @@ const _REGX = (function () {
 
 // #region CELL internal -------------------------
 /** Pacote Interno de Métodos Células dos Módulos Principais. */
-const _CELL = (function () {
-    // Os métodos deste objeto tem permissão para depender dos métodos de AUX, Flex e dos prórpios métodos.
-    const cell = {}
-    return cell
+const CELL = (function () {
+    // Os métodos deste objeto tem permissão para depender dos métodos de AUX e Flex, mas não dos próprios métodos.
+    const _cell = {}
+
+    /** Usado em Flex.isUpper e Flex.isLower. */
+    _cell.isCaseOf = (str, caseType) => {
+        if (typeof str === "string" && str !== "") {
+            // Transformar string para lower e upper para verificar se str é composta somente por caracteres não alfabéticos
+            let lower = str.toLowerCase()
+            let upper = str.toUpperCase()
+            // Se houver diferença entre lower e upper significa que há caracteres alfabéticos
+            if (lower !== upper) {
+                return caseType === "lower"? str === lower : str === upper
+            }
+            lower = null, upper = null
+        }
+    };
+
+    ///
+    return _cell
 })()
 // #endregion
 
@@ -147,36 +163,9 @@ const AUX = (function () {
     //     }
     // }
 
-    /** Usado para obter uma das propriedades se existente em um objeto */
-    _aux.someProp = (o, ...keys) => {
-        if (Flex.typeof(o) === OBJECT) {
-            let is = {
-                MAPWEAK: Flex.is(o, "map", "weakMap"),
-                WEAKREF: Flex.type(o) === "weakRef"
-            }
-            
-            let prop
-            for (let i = 0; i < keys.length; i++){
-
-                if (is.MAPWEAK) {
-                    prop = o.get(keys[i])
-                } else if (is.WEAKREF) {
-                    prop = o.deref()[keys[i]]
-                } else {
-                    prop = o[keys[i]]
-                }
-
-                if (prop !== undefined) {
-                    is = null
-                    return prop
-                }
-            } 
-        }
-    }
 
     /** Usado para obter um item de uma lista caso um index seja fornecido, se não, a lista é retornada. */
     _aux.tryGetItem = (list, i) => i >= 0? list[i] : list
-    
     
     return _aux
 })();
@@ -375,6 +364,20 @@ Flex.JSONParse = (str, handler) => {
 Flex.capitalize = (str) => {
     return typeof str === "string"? str.replace(/\b\w/, (match) => match.toUpperCase()) : undefined
 }
+
+/** *`[string]`*
+ * * Testa se uma *`string`* contendo caracteres alfabéticos está inteiramente em letras maiúsculas e retorna um *`boolean`*. Se a *`string`* for composta somente por caracteres não alfabéticos o retorno é *`undefined`*.
+ * ---
+ * @param {string} str > Uma *`string`* a ser analisada.
+ */
+Flex.isUpper = (str) => CELL.isCaseOf(str, "upper")
+
+/** *`[string]`*
+ * * Testa se uma *`string`* contendo caracteres alfabéticos está inteiramente em letras minúsculas e retorna um *`boolean`*. Se a *`string`* for composta somente por caracteres não alfabéticos o retorno é *`undefined`*.
+ * ---
+ * @param {string} str > Uma *`string`* a ser analisada.
+ */
+Flex.isLower = (str) => CELL.isCaseOf(str, "lower")
 // #endregion -----------------------------
 
 // #region [OBJECT]--------------------
@@ -433,6 +436,10 @@ Flex.len = (collection) => {
         // Obter propriedades que indicam o comprimento de um objeto, se nenhum for encontrado, tentar obter comprimento das chaves como última opção
         return AUX.findLen(collection, "length", "size", "byteLenght") ?? Object.keys(collection).length
     }
+}
+
+Flex.last = (collection) => {
+    
 }
 
 //#endregion --------------------------

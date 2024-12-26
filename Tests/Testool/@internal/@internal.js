@@ -200,7 +200,7 @@ internal.getExecTime = (handler) => {
     const start = performance.now()
     handler()
     const end = performance.now()
-    return (end - start).toFixed(2)+"ms"
+    return (end - start)
 }
 
 /** Compara recursivamente se dois objetos são iguais */

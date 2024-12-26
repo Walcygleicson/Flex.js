@@ -339,9 +339,38 @@ Test.set("capitalize", (args) => {
     args(" heLLo").expect(" HeLLo")
 })
 
+Test.set("isUpper", (args) => {
+    args("HELLO").expect(true)
+    args("hello").expect(false)
+    args("1HELLO").expect(true)
+    args("1HELLo").expect(false)
+    args("").expect(undefined)
+    args(" ").expect(undefined)
+    args("123").expect(undefined)
+    args("123e").expect(false)
+    args("123E").expect(true)
+    args(1).expect(undefined)
+    args("...Ç").expect(true)
+    args("^").expect(undefined)
+})
+
+Test.set("isLower", (args) => {
+    args("hello").expect(true)
+    args("HELLO").expect(false)
+    args("1hello").expect(true)
+    args("1hellO").expect(false)
+    args("").expect(undefined)
+    args(" ").expect(undefined)
+    args("123").expect(undefined)
+    args("123e").expect(true)
+    args("123E").expect(false)
+    args(1).expect(undefined)
+    args("...ç").expect(true)
+})
+
 // #endregion
 
 ///////////////////////////
-//Test.logAll()
+Test.logAll()
 //Test.logOnly("getProp")
-Test.logLast(true)
+//Test.logLast(true)
