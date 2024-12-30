@@ -216,6 +216,7 @@ Test.set("values", (args) => {
     args(view).expect(undefined)
     args(wkRef).expect(["foo", 2.4])
     args(wkRef, 1).expect(2.4)
+    args(wkMap).expect(undefined)
 })
 
 Test.set("isList", (args) => {
@@ -371,6 +372,6 @@ Test.set("isLower", (args) => {
 // #endregion
 
 ///////////////////////////
-Test.logAll()
+//Test.logAll()
 //Test.logOnly("getProp")
 //Test.logLast(true)

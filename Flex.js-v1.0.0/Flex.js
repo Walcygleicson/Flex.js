@@ -35,6 +35,51 @@ const NUMBER = "Number",
 
 //#endregion
 
+// #region CACHE internal -------------------------
+
+const CACHE = (function () {
+    /** @typedef {"type" | "typeof" | "isList" | "isDict"} ProcessNames */
+    const base = {
+        cache: new Map(),
+        limit: 20, // Limite do tamanho do cache
+    }
+    /////
+    return {
+        /** Solicita os dados em cache do alvo. @param {ProcessNames} processName  */
+        get(target, processName) {
+            target = base.cache.get(target)
+            return target !== undefined? target[processName] : undefined
+        },
+
+        /** Salva dados em cache e retorna o valor @param {ProcessNames} processName  */
+        set(target, processName, value) {
+            // Verificar limite do cache. Se exceder, deletar o primeiro dado salvo.
+            base.cache.size >= base.limit ?
+                base.cache.delete(base.cache.keys().next().value)
+                : null
+            
+            // Testar se a chave alvo existe em cache e se propriedade de processo existe para este alvo. Se não, adicionar propriedade de resultado de processo.
+            let data = base.cache.get(target)
+            if (data !== undefined && data[processName] === undefined) {
+                data[processName] = value
+            } else {
+                // Se não existir chave do alvo salva, criar um novo
+                base.cache.set(target, { [processName]: value })
+            }
+
+            return value
+            
+        },
+
+        clear() {base.cache.clear()},
+
+        see() {
+            console.log(base.cache)
+        }
+    }
+})()
+
+
 // #region CHECK internal --------------------------
 /** Pacote interno de *`Hash Tables`* para checagem de valores. */
 const CHECK = (function () {
@@ -134,7 +179,12 @@ const AUX = (function () {
     /** Atalho para *`Object.prototype.toString.call`* */
     _aux.toStringCall = (o) => Object.prototype.toString.call(o)
     /** Testa se um valor número é uma medida válida de comprimento de objeto */
-    _aux.isLen = (len) => Number.isInteger(len) && len >= 0 && len < Number.MAX_SAFE_INTEGER
+    _aux.isLen = (len) => {
+        let cache = CACHE.get(len, "isLen")
+        if (cache !== undefined) {return cache }
+        cache = null
+        return CACHE.set(len, "isLen", Number.isInteger(len) && len >= 0 && len < Number.MAX_SAFE_INTEGER)
+    } 
     
     /** Usado para buscar por uma propriedade de um objeto que indique seu comprimento. */
     _aux.findLen = (o, ...lenKeys) => {
@@ -165,10 +215,13 @@ const AUX = (function () {
 
 
     /** Usado para obter um item de uma lista caso um index seja fornecido, se não, a lista é retornada. */
-    _aux.tryGetItem = (list, i) => i >= 0? list[i] : list
+    _aux.tryGetItem = (list, i) => i >= 0 ? list[i] : list
+    
+    _aux.isWeakSETMAP = (type) => type === WEAKMAP || type === WEAKSET
     
     return _aux
-})();
+})()
+
 //#endregion
 // FLEX.JS Módulos Públicos   ●    ●    ●    ●    ●    ●    ●    ●    ●
 // #region [ANY] ----------------------
@@ -180,8 +233,11 @@ const AUX = (function () {
  * @returns {Type}
  */
 Flex.type = (target) => {
-    if (ISWINDOW && target instanceof HTMLElement) return ELEMENT;
-    return Number.isNaN(target) ? NAN : Object.prototype.toString.call(target).slice(8, -1);
+    let cache = CACHE.get(target, "type")
+    if (cache !== undefined) { return cache }
+    cache = null
+    if (ISWINDOW && target instanceof HTMLElement){return CACHE.set(target, "type",ELEMENT)}
+    return CACHE.set(target, "type", Number.isNaN(target) ? NAN : Object.prototype.toString.call(target).slice(8, -1))
 
 }
 
@@ -191,7 +247,7 @@ Flex.type = (target) => {
  * @param {*} target Uma valor ou objeto a ser analisado.
  * @returns {typeof}
  */
-Flex.typeof = (target) => target === null ? "null" : typeof target
+Flex.typeof = (target) => CACHE.get(target, "typeof") || CACHE.set(target, "typeof", target === null ? "null" : typeof target)
 
 /** *`[any]`*
  * * Testa se o tipo de um dado ou objeto corresponde a um dos tipos passados em *`(...types)`* e retorna um *`boolean`*.
@@ -316,18 +372,22 @@ Flex.keys = (dict, index) => {
  * ---
  * @param {Dictionary} dict > Um *`dictionary`* objeto.
  * @param {number} index > O índice de um item a ser obtido.
- * @returns {Array<unknown> | unknown}
+ * @returns {Array<unknown>}
  */
 Flex.values = (dict, index) => {
-    if (dict instanceof Map || dict instanceof Set) { return AUX.tryGetItem([...dict.values()], index)
-    }
     let type = Flex.type(dict)
-    if (type === WEAKREF) {
-        type = null
-        return AUX.tryGetItem(Object.values(dict.deref()), index)
-    } else if (type === OBJECT || Flex.isDict(dict)) {
-        type = null
-        return AUX.tryGetItem([...Object.values(dict)], index)
+    if (Flex.typeof(dict) === "object" && !AUX.isWeakSETMAP(type)) {
+        if (type === MAP || type === SET) {
+            type = null
+            return AUX.tryGetItem([...dict.values()], index)
+        } else if (type === WEAKREF) {
+            type = null
+            return AUX.tryGetItem(Object.values(dict.deref()), index)
+        } else if (type === OBJECT || Flex.isDict(dict)) {
+            type = null
+            return AUX.tryGetItem([...Object.values(dict)], index)
+        }
+        
     }
 }
 
@@ -339,7 +399,12 @@ Flex.values = (dict, index) => {
  * ---
  * @param {object} target > Um objeto a ser testado.
  */
-Flex.isList = (target) => AUX.isList(target)
+Flex.isList = (target) => {
+    let cache = CACHE.get(target, "isList")
+    if (cache !== undefined) return cache
+    cache = null
+   return CACHE.set(target, "isList", AUX.isList(target))
+} 
 //#endregion----------------------------------
 
 // #region [STRING]--------------------
@@ -425,6 +490,13 @@ Flex.getProp = (obj, ...keys) => {
 //#endregion --------------------------
 
 // #region [COLLECTION] ---------------
+
+/** *`[collection]`*
+ * * Retorna o número de elementos de uma *`coleção`* de valores.
+ * ---
+ * @param {Collection} collection > Uma *`lista`*, *`dicionário`* ou *`string`*.
+ * @returns {number}
+ */
 Flex.len = (collection) => {
     let type = Flex.type(collection)
     // Objetos genéricos - obtér qunatidade de chaves
@@ -438,8 +510,18 @@ Flex.len = (collection) => {
     }
 }
 
+/** *`[collection]`*
+ * * Retorna o último elemento de uma *`coleção`* de valores.
+ * ---
+ * @param {Collection} collection > Uma *`lista`*, *`dicionário`* ou *`string`*.
+ */
 Flex.last = (collection) => {
-    
+    if (typeof collection === "string" || !Flex.isPrimitive(collection)) {
+        const list = Flex.values(collection)
+        if (list !== undefined) {
+            return list[list.length - 1]
+        }
+    }
 }
 
 //#endregion --------------------------
@@ -467,7 +549,7 @@ const _ = Flex
 export default _
 
 // --- [Exportação dos Módulos Internos Para Área de Testes]
-export {AUX}
+export {AUX, CACHE}
 
 
 // #region @typedef   ●    ●    ●    ●    ●    ●    ●    ●    ●
