@@ -36,9 +36,8 @@ const NUMBER = "Number",
 //#endregion
 
 // #region CACHE internal -------------------------
-
 const CACHE = (function () {
-    /** @typedef {"type" | "typeof" | "isList" | "isDict"} ProcessNames */
+    /** @typedef {"type" | "typeof" | "isList" | "isDict" | "isLen"} ProcessNames */
     const base = {
         cache: new Map(),
         limit: 20, // Limite do tamanho do cache
@@ -78,7 +77,7 @@ const CACHE = (function () {
         }
     }
 })()
-
+// #endregion ------------------------------------
 
 // #region CHECK internal --------------------------
 /** Pacote interno de *`Hash Tables`* para checagem de valores. */
@@ -126,12 +125,12 @@ const CHECK = (function () {
 
 // #region SYM internal  ---------------------------
 /** Pacote Interno de Symbols */
-const _SYM = (function () {
-    const symbol = {}
+const SYM = (function () {
+    const _sym = {}
     /** Token do método de interrupção de loops */
-    symbol.break = Symbol("[iteration.break]")
+    _sym.break = Symbol("[iteration.break]")
 
-    return symbol
+    return _sym
 })()
 //#endregion
 
@@ -202,7 +201,7 @@ const AUX = (function () {
             Flex.typeof(list) === "object" &&
             "length" in list && // Testa a existência da propriedade length
             AUX.isLen(list.length) &&
-            Object.keys(list).every((key, i) => !isNaN(parseInt(key)) && i == key) // Testa se todas as chaves são número inteiros
+            Object.keys(list).every((key, i) => !isNaN(parseInt(key)) && i == key) // Testa se todas as chaves são números inteiros
         );
     }
 
@@ -216,6 +215,43 @@ const AUX = (function () {
 
     /** Usado para obter um item de uma lista caso um index seja fornecido, se não, a lista é retornada. */
     _aux.tryGetItem = (list, i) => i >= 0 ? list[i] : list
+
+    /** Usado para obter e verificar valores de um objeto por chave ou index, dependendo do contexto. Deve funcionar para todos os tipos de objetos como *`string | list | dict`*
+     * * Indicado para uso em iterações.
+     * @returns {{get(key), has(key): boolean}} */
+    _aux.NEWUniversalObject = (obj) => {
+        // Armazena tipagens
+        let is = {
+            type: Flex.type(obj),
+            typeof: Flex.typeof(obj)
+        }
+       
+        const output = {}
+        if (is.typeof === "object" || is.typeof === "string") {
+            if (is.type === MAP || is.type === WEAKMAP) {
+                output.get = (key)=> obj.get(key)
+                output.has = (key) => obj.has(key)
+                is = null
+                return output
+            }
+
+            switch (is.type) {
+                case WEAKREF:
+                    obj = obj.deref()
+                    break
+                case SET:
+                    obj = [...obj]
+                    break
+            }
+            
+            output.get = (key) => obj[key]
+            output.has = (key) => key in obj
+            is = null
+            return output
+
+        }
+
+    }
     
     _aux.isWeakSETMAP = (type) => type === WEAKMAP || type === WEAKSET
     
@@ -245,7 +281,7 @@ Flex.type = (target) => {
  * * É semelhante ao *`typeof`* operador, porém corrige o *`bug histórico`* em que *`typeof null => "object"`*.
  * ---
  * @param {*} target Uma valor ou objeto a ser analisado.
- * @returns {typeof}
+ * @returns {Typeof}
  */
 Flex.typeof = (target) => CACHE.get(target, "typeof") || CACHE.set(target, "typeof", target === null ? "null" : typeof target)
 
@@ -457,34 +493,43 @@ Flex.unproto = (obj) => {
 }
 
 /** *`[object]`*
- * * Verifica se uma ou mais propriedades existem em um objeto e retorna o primeiro valor encontrado da busca. Se nenhuma propriedade for encontrada o retorno é *`undefined`*.
+ * * Retorna o valor da primeira propriedade própria e enumerável encontrada em um objeto apenas se o valor for diferente de *`undefined`*. Se nada for encontrado o retorno é *`undefined`* - isso pode indicar que a propriedade não existe ou existe mas seu valor é *`undefined`*.
  * ---
  * @param {object} obj > Um objeto de propriedades. 
  * @param  {...any} keys > Uma ou mais chaves de propriedades para a busca.
  */
 Flex.getProp = (obj, ...keys) => {
     if (Flex.typeof(obj) === "object") {
-        let type = Flex.type(obj)
-        let key
         let output
-
+        let UObj = AUX.NEWUniversalObject(obj)
         for (let i = 0; i < keys.length; i++) {
-            key = keys[i]
-
-            if (type === MAP || type === WEAKMAP) {
-                output = obj.get(key)
-            } else if (type === WEAKREF) {
-                output = obj.deref()[key]
-            } else {
-                output = obj[key]
-            }
-
-            // Não retornar enquanto output for undefined
+            output = UObj.get(keys[i])
+            // Retornar valor apenas se output for diferente de undefined.
             if (output !== undefined) {
-                type = null, key = null
+                UObj = null
                 return output
             }
         }
+        UObj = null
+    }
+}
+
+/** *`[object]`*
+ * * Retorna a primeira chave de uma propriedade própria e enumerável encontrada em um objeto alvo. Se a chave não existir, o retorno é *`undefined`*.
+ * @param {object} obj > Um objeto de propriedades. 
+ * @param  {...any} keys > As chaves de propriedades para a busca.
+ * @returns {string | unknown}
+ */
+Flex.findKey = (obj, ...keys) => {
+    if (Flex.typeof(obj) === "object") {
+        let UObj = AUX.NEWUniversalObject(obj)
+        for(let i = 0; i < keys.length; i++){
+            if (UObj.has(keys[i])) {
+                UObj = null
+                return keys[i]
+            }
+        }
+        UObj = null
     }
 }
 //#endregion --------------------------
@@ -516,10 +561,14 @@ Flex.len = (collection) => {
  * @param {Collection} collection > Uma *`lista`*, *`dicionário`* ou *`string`*.
  */
 Flex.last = (collection) => {
-    if (typeof collection === "string" || !Flex.isPrimitive(collection)) {
-        const list = Flex.values(collection)
+    let typeOf = Flex.typeof(collection)
+    if (typeOf === "string" || typeOf === "object") {
+        // Tentar obter valores de propriedades primeiro. Se n obter, indica que a coleção é uma lista indexada
+        let list = Flex.values(collection)
         if (list !== undefined) {
             return list[list.length - 1]
+        } else {
+            return collection[collection.length - 1]
         }
     }
 }
@@ -537,7 +586,35 @@ Flex.isInt = (num) => Flex.type(num) === BIGINT || (Number(num) ? num % 1 === 0 
 
 // #endregion --------------------------
 
+// #region [CONSTRUCTORS] --------------
+const sym = Symbol("circle.array")
+class CircleArray{
+    constructor(length) {
+        this.length = length
+        Object.defineProperty(this, "length", {enumerable: false, writable: false})
+        Object.defineProperty(this, sym, { value: [] })
 
+        
+    }
+
+    add(value) {
+        const arr = this[sym]
+        if (arr.length >= this.length) {arr.shift()}
+        arr.push(value)
+    }
+
+    set(value, index) {
+        const arr = this[sym]
+        if (index <= (arr.length - 1)) {
+            arr[index] = value
+        } else {
+            this.add(value)
+        }
+    }
+}
+
+Flex.NEWCircleArray = (length, insertion) => new CircleArray(length, insertion)
+// #endregion --------------------------
 // #regin [ERROR]-----------------------
 //#endregion ---------------------------
 
@@ -556,6 +633,8 @@ export {AUX, CACHE}
 //--- [Conjunto de typedef]
 /**
  * @typedef {"Number"|"Function"|"BigInt"|"Symbol"|"Undefined"|"Array"|"Object"|"String"|"HTMLElement"|"HTMLCollection"|"NodeList"|"Set"|"Map"|"Null"|"Boolean"|"Date"|"Window"|"HTMLDocument"|"Error"|"Animation"|"ArrayBuffer"|"Blob"|"NamedNodeMap"|"DOMTokenList"|"PointerEvent"|"MouseEvent"|"Event"|"DOMParser"|"StyleSheetList"|"CSSStyleSheet"|"CssRuleList"|"Text"|"Comment"|"NaN"|"DataView"|"File"} Type
+ * 
+ * @typedef {"object" | "function" | "number" | "string" | "symbol" | "bigint" | "boolean" | "undefined" | "null"} Typeof
  * 
  * @typedef {{}} Dictionary Uma coleção de pares de chave e valor.
  * 

@@ -204,7 +204,10 @@ internal.getExecTime = (handler) => {
 }
 
 /** Compara recursivamente se dois objetos são iguais */
-internal.isEqual = (a, b)=>{
+internal.isEqual = (a, b) => {
+    if (a instanceof HTMLElement && b instanceof HTMLElement) {
+        return a === b
+    }
     // Verifica se ambos são do mesmo tipo
     if (typeof a !== typeof b) return false;
 

@@ -1,6 +1,7 @@
 
 import _ from "../Flex.js-v1.0.0/Flex.js";
-
+import Speed from "./Speed.js";
+import {VAR} from "./Vars.js";
 import { AUX, CACHE} from "../Flex.js-v1.0.0/Flex.js";
 import benchmark from "./Benchmark.js";
 const speed = (fn, ...args)=>{
@@ -35,14 +36,21 @@ for(let i = 0; i < 40; i++){
 Object.defineProperty(bigFakeList, "length", {value: 40})
 const bigfloat = 11111111111491018.0123456789012345
 Object.defineProperty(fakeArr, "length", { value: 2 })
+//Speed(_.isList, VAR.bigWrongFakeArr).times(3);
 
-speed(_.isList, bigFakeList)
-speed(_.isList, bigFakeList)
-speed(_.isList, bigFakeList)
-speed(_.isList, bigFakeList)
+Speed(_.findKey, ob, "leeee", "hth", "age").times(3)
+const circle = _.NEWCircleArray(3, "end")
+circle.add(0)
+circle.add(1)
+circle.add(2)
+circle.add(3)
+circle.set("ola", 4)
+console.log(circle)
+// 0.2
+// 0.009
+//0.01
 
 
-CACHE.see()
 
 
 /////////////////

@@ -1,5 +1,6 @@
 import Testool from "../Testool/Testool.js"
 import _ from "../../Flex.js-v1.0.0/Flex.js"
+import { VAR } from "../Vars.js"
 const Class = (function () {
     class Class {
         constructor() {
@@ -369,9 +370,42 @@ Test.set("isLower", (args) => {
     args("...ç").expect(true)
 })
 
+Test.set("last", (args) => {
+    args("oi").expect("i")
+    const lasChild = VAR.HTMLCollection[VAR.HTMLCollection.length - 1]
+    args(VAR.HTMLCollection).expect(lasChild)
+    args(VAR.nodeList).expect(lasChild)
+    args(VAR.Map).expect(3.14)
+    args(VAR.Set).expect(VAR.sym)
+    args(VAR.arr).expect("monkey")
+    args(VAR.obj).expect(2024)
+    args(VAR.arguments).expect("bar")
+    args(VAR.buffer).expect(undefined)
+    args(VAR.view).expect(undefined)
+    args(VAR.uint8).expect(88)
+    args(VAR.int8).expect(88)
+    args(1).expect(undefined)
+    args(VAR.weakRef).expect("JS")
+    args(VAR.weakMap).expect()
+    args(VAR.proxy).expect("black")
+    args([]).expect(undefined)
+})
+
+Test.set("findKey", (args) => {
+    args(VAR.obj, "hello", "age", 'buu').expect("age")
+    args(VAR.Map, "buu", "luu", "foo").expect("foo")
+    args(VAR.weakMap, [], VAR.sym).expect(VAR.sym)
+    args(VAR.weakRef, "foo", "lang").expect("lang")
+    args(VAR.arr, 12, 1).expect(1)
+    args(VAR.obj, "xu", "luu", "undefined").expect("undefined")
+    args(VAR.Set, "9", "3").expect("3")
+    args(VAR.arguments, "7", "1").expect("1")
+    args(VAR.uint8, 9, 3).expect(3)
+    args(VAR.weakSet, -1, 2).expect(undefined)
+})
 // #endregion
 
 ///////////////////////////
-//Test.logAll()
+Test.logAll()
 //Test.logOnly("getProp")
 //Test.logLast(true)
